@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "mcp__firecrawl__firecrawl_scrape"
+      "mcp__firecrawl__firecrawl_scrape",
+      "Bash(grep -r \"preset\\\\|adapter\\\\|vercel\\\\|deploy\" /Users/dougallen/Desktop/kover-king/app.config.* /Users/dougallen/Desktop/kover-king/vite.config.ts)"
     ]
   }
 }
