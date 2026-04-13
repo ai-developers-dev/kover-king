@@ -152,21 +152,64 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Service Areas */}
+          {/* Springfield IL */}
           <div>
             <h3 className="text-white font-heading font-semibold mb-4 text-sm uppercase tracking-wider">
-              Service Areas
+              Springfield IL
             </h3>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {serviceAreas.map((area) => (
-                <span
-                  key={area}
-                  className="bg-gray-800 px-2.5 py-1 rounded-md text-gray-400"
+            <ul className="space-y-3 text-sm mb-6">
+              <li>
+                <Link
+                  to="/home-insurance-springfield-il"
+                  className="hover:text-primary-500 transition-colors"
                 >
-                  {area}, IL
-                </span>
-              ))}
-            </div>
+                  Home Insurance Springfield
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/auto-insurance-springfield-il"
+                  className="hover:text-primary-500 transition-colors"
+                >
+                  Auto Insurance Springfield
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/business-insurance-springfield-il"
+                  className="hover:text-primary-500 transition-colors"
+                >
+                  Business Insurance Springfield
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/life-insurance-springfield-il"
+                  className="hover:text-primary-500 transition-colors"
+                >
+                  Life Insurance Springfield
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/landlord-insurance-springfield"
+                  className="hover:text-primary-500 transition-colors"
+                >
+                  Landlord Insurance Springfield
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/duplex-insurance-springfield"
+                  className="hover:text-primary-500 transition-colors"
+                >
+                  Duplex Insurance Springfield
+                </Link>
+              </li>
+            </ul>
+            <p className="text-xs text-gray-600 italic">
+              Serving all of Sangamon County and Central Illinois
+            </p>
             <p className="text-xs text-gray-600 mt-3">
               Serving all of Sangamon County and Central Illinois
             </p>

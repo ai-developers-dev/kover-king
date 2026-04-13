@@ -11,12 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as LifeInsuranceSpringfieldIlRouteImport } from './routes/life-insurance-springfield-il'
 import { Route as LifeRouteImport } from './routes/life'
+import { Route as LandlordInsuranceSpringfieldRouteImport } from './routes/landlord-insurance-springfield'
 import { Route as LandlordInsuranceRouteImport } from './routes/landlord-insurance'
+import { Route as HomeInsuranceSpringfieldIlRouteImport } from './routes/home-insurance-springfield-il'
 import { Route as HomeInsuranceRouteImport } from './routes/home-insurance'
+import { Route as DuplexInsuranceSpringfieldRouteImport } from './routes/duplex-insurance-springfield'
 import { Route as DuplexInsuranceRouteImport } from './routes/duplex-insurance'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as BusinessInsuranceSpringfieldIlRouteImport } from './routes/business-insurance-springfield-il'
 import { Route as BusinessRouteImport } from './routes/business'
+import { Route as AutoInsuranceSpringfieldIlRouteImport } from './routes/auto-insurance-springfield-il'
 import { Route as AutoRouteImport } from './routes/auto'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
@@ -34,21 +40,45 @@ const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LifeInsuranceSpringfieldIlRoute =
+  LifeInsuranceSpringfieldIlRouteImport.update({
+    id: '/life-insurance-springfield-il',
+    path: '/life-insurance-springfield-il',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LifeRoute = LifeRouteImport.update({
   id: '/life',
   path: '/life',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LandlordInsuranceSpringfieldRoute =
+  LandlordInsuranceSpringfieldRouteImport.update({
+    id: '/landlord-insurance-springfield',
+    path: '/landlord-insurance-springfield',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LandlordInsuranceRoute = LandlordInsuranceRouteImport.update({
   id: '/landlord-insurance',
   path: '/landlord-insurance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HomeInsuranceSpringfieldIlRoute =
+  HomeInsuranceSpringfieldIlRouteImport.update({
+    id: '/home-insurance-springfield-il',
+    path: '/home-insurance-springfield-il',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const HomeInsuranceRoute = HomeInsuranceRouteImport.update({
   id: '/home-insurance',
   path: '/home-insurance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DuplexInsuranceSpringfieldRoute =
+  DuplexInsuranceSpringfieldRouteImport.update({
+    id: '/duplex-insurance-springfield',
+    path: '/duplex-insurance-springfield',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DuplexInsuranceRoute = DuplexInsuranceRouteImport.update({
   id: '/duplex-insurance',
   path: '/duplex-insurance',
@@ -59,11 +89,23 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BusinessInsuranceSpringfieldIlRoute =
+  BusinessInsuranceSpringfieldIlRouteImport.update({
+    id: '/business-insurance-springfield-il',
+    path: '/business-insurance-springfield-il',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BusinessRoute = BusinessRouteImport.update({
   id: '/business',
   path: '/business',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutoInsuranceSpringfieldIlRoute =
+  AutoInsuranceSpringfieldIlRouteImport.update({
+    id: '/auto-insurance-springfield-il',
+    path: '/auto-insurance-springfield-il',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AutoRoute = AutoRouteImport.update({
   id: '/auto',
   path: '/auto',
@@ -101,12 +143,18 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/auto': typeof AutoRoute
+  '/auto-insurance-springfield-il': typeof AutoInsuranceSpringfieldIlRoute
   '/business': typeof BusinessRoute
+  '/business-insurance-springfield-il': typeof BusinessInsuranceSpringfieldIlRoute
   '/contact': typeof ContactRoute
   '/duplex-insurance': typeof DuplexInsuranceRoute
+  '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
   '/home-insurance': typeof HomeInsuranceRoute
+  '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
   '/landlord-insurance': typeof LandlordInsuranceRoute
+  '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
+  '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -117,12 +165,18 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/auto': typeof AutoRoute
+  '/auto-insurance-springfield-il': typeof AutoInsuranceSpringfieldIlRoute
   '/business': typeof BusinessRoute
+  '/business-insurance-springfield-il': typeof BusinessInsuranceSpringfieldIlRoute
   '/contact': typeof ContactRoute
   '/duplex-insurance': typeof DuplexInsuranceRoute
+  '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
   '/home-insurance': typeof HomeInsuranceRoute
+  '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
   '/landlord-insurance': typeof LandlordInsuranceRoute
+  '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
+  '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -134,12 +188,18 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/auto': typeof AutoRoute
+  '/auto-insurance-springfield-il': typeof AutoInsuranceSpringfieldIlRoute
   '/business': typeof BusinessRoute
+  '/business-insurance-springfield-il': typeof BusinessInsuranceSpringfieldIlRoute
   '/contact': typeof ContactRoute
   '/duplex-insurance': typeof DuplexInsuranceRoute
+  '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
   '/home-insurance': typeof HomeInsuranceRoute
+  '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
   '/landlord-insurance': typeof LandlordInsuranceRoute
+  '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
+  '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin_/dashboard': typeof AdminDashboardRoute
@@ -152,12 +212,18 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/auto'
+    | '/auto-insurance-springfield-il'
     | '/business'
+    | '/business-insurance-springfield-il'
     | '/contact'
     | '/duplex-insurance'
+    | '/duplex-insurance-springfield'
     | '/home-insurance'
+    | '/home-insurance-springfield-il'
     | '/landlord-insurance'
+    | '/landlord-insurance-springfield'
     | '/life'
+    | '/life-insurance-springfield-il'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/admin/dashboard'
@@ -168,12 +234,18 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/auto'
+    | '/auto-insurance-springfield-il'
     | '/business'
+    | '/business-insurance-springfield-il'
     | '/contact'
     | '/duplex-insurance'
+    | '/duplex-insurance-springfield'
     | '/home-insurance'
+    | '/home-insurance-springfield-il'
     | '/landlord-insurance'
+    | '/landlord-insurance-springfield'
     | '/life'
+    | '/life-insurance-springfield-il'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/admin/dashboard'
@@ -184,12 +256,18 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/auto'
+    | '/auto-insurance-springfield-il'
     | '/business'
+    | '/business-insurance-springfield-il'
     | '/contact'
     | '/duplex-insurance'
+    | '/duplex-insurance-springfield'
     | '/home-insurance'
+    | '/home-insurance-springfield-il'
     | '/landlord-insurance'
+    | '/landlord-insurance-springfield'
     | '/life'
+    | '/life-insurance-springfield-il'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/admin_/dashboard'
@@ -201,12 +279,18 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
   AutoRoute: typeof AutoRoute
+  AutoInsuranceSpringfieldIlRoute: typeof AutoInsuranceSpringfieldIlRoute
   BusinessRoute: typeof BusinessRoute
+  BusinessInsuranceSpringfieldIlRoute: typeof BusinessInsuranceSpringfieldIlRoute
   ContactRoute: typeof ContactRoute
   DuplexInsuranceRoute: typeof DuplexInsuranceRoute
+  DuplexInsuranceSpringfieldRoute: typeof DuplexInsuranceSpringfieldRoute
   HomeInsuranceRoute: typeof HomeInsuranceRoute
+  HomeInsuranceSpringfieldIlRoute: typeof HomeInsuranceSpringfieldIlRoute
   LandlordInsuranceRoute: typeof LandlordInsuranceRoute
+  LandlordInsuranceSpringfieldRoute: typeof LandlordInsuranceSpringfieldRoute
   LifeRoute: typeof LifeRoute
+  LifeInsuranceSpringfieldIlRoute: typeof LifeInsuranceSpringfieldIlRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
@@ -228,11 +312,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/life-insurance-springfield-il': {
+      id: '/life-insurance-springfield-il'
+      path: '/life-insurance-springfield-il'
+      fullPath: '/life-insurance-springfield-il'
+      preLoaderRoute: typeof LifeInsuranceSpringfieldIlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/life': {
       id: '/life'
       path: '/life'
       fullPath: '/life'
       preLoaderRoute: typeof LifeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/landlord-insurance-springfield': {
+      id: '/landlord-insurance-springfield'
+      path: '/landlord-insurance-springfield'
+      fullPath: '/landlord-insurance-springfield'
+      preLoaderRoute: typeof LandlordInsuranceSpringfieldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/landlord-insurance': {
@@ -242,11 +340,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LandlordInsuranceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/home-insurance-springfield-il': {
+      id: '/home-insurance-springfield-il'
+      path: '/home-insurance-springfield-il'
+      fullPath: '/home-insurance-springfield-il'
+      preLoaderRoute: typeof HomeInsuranceSpringfieldIlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home-insurance': {
       id: '/home-insurance'
       path: '/home-insurance'
       fullPath: '/home-insurance'
       preLoaderRoute: typeof HomeInsuranceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/duplex-insurance-springfield': {
+      id: '/duplex-insurance-springfield'
+      path: '/duplex-insurance-springfield'
+      fullPath: '/duplex-insurance-springfield'
+      preLoaderRoute: typeof DuplexInsuranceSpringfieldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/duplex-insurance': {
@@ -263,11 +375,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/business-insurance-springfield-il': {
+      id: '/business-insurance-springfield-il'
+      path: '/business-insurance-springfield-il'
+      fullPath: '/business-insurance-springfield-il'
+      preLoaderRoute: typeof BusinessInsuranceSpringfieldIlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/business': {
       id: '/business'
       path: '/business'
       fullPath: '/business'
       preLoaderRoute: typeof BusinessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auto-insurance-springfield-il': {
+      id: '/auto-insurance-springfield-il'
+      path: '/auto-insurance-springfield-il'
+      fullPath: '/auto-insurance-springfield-il'
+      preLoaderRoute: typeof AutoInsuranceSpringfieldIlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auto': {
@@ -321,12 +447,18 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
   AutoRoute: AutoRoute,
+  AutoInsuranceSpringfieldIlRoute: AutoInsuranceSpringfieldIlRoute,
   BusinessRoute: BusinessRoute,
+  BusinessInsuranceSpringfieldIlRoute: BusinessInsuranceSpringfieldIlRoute,
   ContactRoute: ContactRoute,
   DuplexInsuranceRoute: DuplexInsuranceRoute,
+  DuplexInsuranceSpringfieldRoute: DuplexInsuranceSpringfieldRoute,
   HomeInsuranceRoute: HomeInsuranceRoute,
+  HomeInsuranceSpringfieldIlRoute: HomeInsuranceSpringfieldIlRoute,
   LandlordInsuranceRoute: LandlordInsuranceRoute,
+  LandlordInsuranceSpringfieldRoute: LandlordInsuranceSpringfieldRoute,
   LifeRoute: LifeRoute,
+  LifeInsuranceSpringfieldIlRoute: LifeInsuranceSpringfieldIlRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   AdminDashboardRoute: AdminDashboardRoute,
