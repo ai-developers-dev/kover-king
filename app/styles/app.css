@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  /* Orange brand palette (from koverking.com) */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #ffedd5;
+  --color-primary-200: #fed7aa;
+  --color-primary-300: #fdba74;
+  --color-primary-400: #fb923c;
+  --color-primary-500: #E9560C;
+  --color-primary-600: #d14a0a;
+  --color-primary-700: #b33d08;
+  --color-primary-800: #9a3412;
+  --color-primary-900: #7c2d12;
+
+  /* Salmon / secondary */
+  --color-secondary-500: #FA8072;
+  --color-secondary-600: #e06b5e;
+
+  /* Warm neutrals */
+  --color-surface: #F5F5F5;
+  --color-surface-white: #FFFFFF;
+  --color-text-primary: #171717;
+  --color-text-secondary: #525252;
+  --color-text-muted: #737373;
+
+  /* Accent cream for link/badge backgrounds */
+  --color-cream: #FFF6EB;
+
+  --font-heading: "Outfit", system-ui, sans-serif;
+  --font-sans: "Roboto", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply font-sans text-text-primary antialiased bg-surface;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+/* Dialog animations */
+@keyframes dialog-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialog-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes dialog-zoom-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes dialog-zoom-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+}
+
+[data-state="open"].animate-in {
+  animation: dialog-fade-in 150ms ease-out;
+}
+[data-state="closed"].animate-out {
+  animation: dialog-fade-out 100ms ease-in;
+}
+[data-state="open"].zoom-in-95 {
+  animation: dialog-zoom-in 150ms ease-out;
+}
+[data-state="closed"].zoom-out-95 {
+  animation: dialog-zoom-out 100ms ease-in;
+}
+
+/* Logo scroll animation */
+@keyframes logo-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.logo-scroll-track {
+  animation: logo-scroll 30s linear infinite;
+}
+.logo-scroll-track:hover {
+  animation-play-state: paused;
+}
