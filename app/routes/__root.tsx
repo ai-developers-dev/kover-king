@@ -63,7 +63,8 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const isAdmin = useMatch({ from: "/admin_/dashboard", shouldThrow: false });
-  const showChrome = !isAdmin;
+  const isPpc = useMatch({ from: "/home-ppc-form", shouldThrow: false });
+  const showChrome = !isAdmin && !isPpc;
 
   return (
     <html lang="en">

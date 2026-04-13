@@ -15,6 +15,7 @@ import { Route as LifeInsuranceSpringfieldIlRouteImport } from './routes/life-in
 import { Route as LifeRouteImport } from './routes/life'
 import { Route as LandlordInsuranceSpringfieldRouteImport } from './routes/landlord-insurance-springfield'
 import { Route as LandlordInsuranceRouteImport } from './routes/landlord-insurance'
+import { Route as HomePpcFormRouteImport } from './routes/home-ppc-form'
 import { Route as HomeInsuranceSpringfieldIlRouteImport } from './routes/home-insurance-springfield-il'
 import { Route as HomeInsuranceRouteImport } from './routes/home-insurance'
 import { Route as DuplexInsuranceSpringfieldRouteImport } from './routes/duplex-insurance-springfield'
@@ -60,6 +61,11 @@ const LandlordInsuranceSpringfieldRoute =
 const LandlordInsuranceRoute = LandlordInsuranceRouteImport.update({
   id: '/landlord-insurance',
   path: '/landlord-insurance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomePpcFormRoute = HomePpcFormRouteImport.update({
+  id: '/home-ppc-form',
+  path: '/home-ppc-form',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeInsuranceSpringfieldIlRoute =
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
   '/home-insurance': typeof HomeInsuranceRoute
   '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
+  '/home-ppc-form': typeof HomePpcFormRoute
   '/landlord-insurance': typeof LandlordInsuranceRoute
   '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
   '/home-insurance': typeof HomeInsuranceRoute
   '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
+  '/home-ppc-form': typeof HomePpcFormRoute
   '/landlord-insurance': typeof LandlordInsuranceRoute
   '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
   '/home-insurance': typeof HomeInsuranceRoute
   '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
+  '/home-ppc-form': typeof HomePpcFormRoute
   '/landlord-insurance': typeof LandlordInsuranceRoute
   '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/duplex-insurance-springfield'
     | '/home-insurance'
     | '/home-insurance-springfield-il'
+    | '/home-ppc-form'
     | '/landlord-insurance'
     | '/landlord-insurance-springfield'
     | '/life'
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/duplex-insurance-springfield'
     | '/home-insurance'
     | '/home-insurance-springfield-il'
+    | '/home-ppc-form'
     | '/landlord-insurance'
     | '/landlord-insurance-springfield'
     | '/life'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/duplex-insurance-springfield'
     | '/home-insurance'
     | '/home-insurance-springfield-il'
+    | '/home-ppc-form'
     | '/landlord-insurance'
     | '/landlord-insurance-springfield'
     | '/life'
@@ -287,6 +299,7 @@ export interface RootRouteChildren {
   DuplexInsuranceSpringfieldRoute: typeof DuplexInsuranceSpringfieldRoute
   HomeInsuranceRoute: typeof HomeInsuranceRoute
   HomeInsuranceSpringfieldIlRoute: typeof HomeInsuranceSpringfieldIlRoute
+  HomePpcFormRoute: typeof HomePpcFormRoute
   LandlordInsuranceRoute: typeof LandlordInsuranceRoute
   LandlordInsuranceSpringfieldRoute: typeof LandlordInsuranceSpringfieldRoute
   LifeRoute: typeof LifeRoute
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/landlord-insurance'
       fullPath: '/landlord-insurance'
       preLoaderRoute: typeof LandlordInsuranceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home-ppc-form': {
+      id: '/home-ppc-form'
+      path: '/home-ppc-form'
+      fullPath: '/home-ppc-form'
+      preLoaderRoute: typeof HomePpcFormRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home-insurance-springfield-il': {
@@ -455,6 +475,7 @@ const rootRouteChildren: RootRouteChildren = {
   DuplexInsuranceSpringfieldRoute: DuplexInsuranceSpringfieldRoute,
   HomeInsuranceRoute: HomeInsuranceRoute,
   HomeInsuranceSpringfieldIlRoute: HomeInsuranceSpringfieldIlRoute,
+  HomePpcFormRoute: HomePpcFormRoute,
   LandlordInsuranceRoute: LandlordInsuranceRoute,
   LandlordInsuranceSpringfieldRoute: LandlordInsuranceSpringfieldRoute,
   LifeRoute: LifeRoute,
