@@ -1,0 +1,11 @@
+{
+  "redirects": [
+    { "source": "/landlord-insurance-springfield", "destination": "/landlord-insurance", "permanent": true },
+    { "source": "/duplex-insurance-springfield", "destination": "/duplex-insurance", "permanent": true },
+    { "source": "/auto-insurance-springfield-il", "destination": "/auto", "permanent": true },
+    { "source": "/home-insurance-springfield-il", "destination": "/home-insurance", "permanent": true },
+    { "source": "/business-insurance-springfield-il", "destination": "/business", "permanent": true },
+    { "source": "/life-insurance-springfield-il", "destination": "/life", "permanent": true },
+    { "source": "/admin-auth", "destination": "/admin", "permanent": true }
+  ]
+}
