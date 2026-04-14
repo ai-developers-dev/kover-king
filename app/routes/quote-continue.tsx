@@ -63,6 +63,8 @@ function QuoteContinuePage() {
     "loading" | "ready" | "invalid"
   >("loading");
 
+  const [hasPrefill, setHasPrefill] = useState(false);
+
   // Prefilled fields
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -85,7 +87,8 @@ function QuoteContinuePage() {
     const token = params.get("t");
 
     if (!token) {
-      setPrefillStatus("invalid");
+      // No token — show form without prefill
+      setPrefillStatus("ready");
       return;
     }
 
@@ -98,13 +101,14 @@ function QuoteContinuePage() {
         setFullName(data.full_name ?? "");
         setEmail(data.email ?? "");
         setPhone(data.phone ?? "");
+        setHasPrefill(true);
         setPrefillStatus("ready");
       })
       .catch(() => setPrefillStatus("invalid"));
   }, []);
 
   const handleSubmit = async () => {
-    if (!homeValue || !yearBuilt || !homeType) return;
+    if (!homeValue || !yearBuilt || !homeType || !fullName || !email || !phone) return;
     setSubmitting(true);
 
     const selected = HOME_VALUES.find((v) => v.value === homeValue);
@@ -245,48 +249,52 @@ function QuoteContinuePage() {
                   </p>
 
                   <div className="space-y-4">
-                    {/* Prefilled fields (read-only) */}
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
-                      <p className="text-xs font-semibold text-green-700 flex items-center gap-1.5">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Pre-filled from your request
-                      </p>
-                      <div>
-                        <label className="block text-xs font-semibold text-text-muted mb-1">
-                          Name
-                        </label>
-                        <input
-                          type="text"
-                          value={fullName}
-                          disabled
-                          className="w-full px-3 py-2 bg-white border border-green-200 rounded-lg text-sm text-text-primary"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
+                    {/* Contact fields — read-only if prefilled, editable if not */}
+                    {hasPrefill ? (
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
+                        <p className="text-xs font-semibold text-green-700 flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Pre-filled from your request
+                        </p>
                         <div>
-                          <label className="block text-xs font-semibold text-text-muted mb-1">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            value={email}
-                            disabled
-                            className="w-full px-3 py-2 bg-white border border-green-200 rounded-lg text-sm text-text-primary"
-                          />
+                          <label className="block text-xs font-semibold text-text-muted mb-1">Name</label>
+                          <input type="text" value={fullName} disabled className="w-full px-3 py-2 bg-white border border-green-200 rounded-lg text-sm text-text-primary" />
                         </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-text-muted mb-1">
-                            Phone
-                          </label>
-                          <input
-                            type="tel"
-                            value={phone}
-                            disabled
-                            className="w-full px-3 py-2 bg-white border border-green-200 rounded-lg text-sm text-text-primary"
-                          />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-text-muted mb-1">Email</label>
+                            <input type="email" value={email} disabled className="w-full px-3 py-2 bg-white border border-green-200 rounded-lg text-sm text-text-primary" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-text-muted mb-1">Phone</label>
+                            <input type="tel" value={phone} disabled className="w-full px-3 py-2 bg-white border border-green-200 rounded-lg text-sm text-text-primary" />
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-sm font-semibold text-text-primary mb-1">
+                            Full Name <span className="text-red-500">*</span>
+                          </label>
+                          <input type="text" placeholder="Jane Smith" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-semibold text-text-primary mb-1">
+                              Email <span className="text-red-500">*</span>
+                            </label>
+                            <input type="email" placeholder="jane@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-text-primary mb-1">
+                              Phone <span className="text-red-500">*</span>
+                            </label>
+                            <input type="tel" placeholder="(217) 555-0100" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     {/* Additional fields */}
                     <div>
@@ -401,7 +409,7 @@ function QuoteContinuePage() {
                     <button
                       onClick={handleSubmit}
                       disabled={
-                        !homeValue || !yearBuilt || !homeType || submitting
+                        !homeValue || !yearBuilt || !homeType || !fullName || !email || !phone || submitting
                       }
                       className="w-full flex items-center justify-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white font-bold py-3.5 px-6 rounded-xl transition-colors shadow-[0_8px_30px_-8px_rgba(233,86,12,0.4)]"
                     >
