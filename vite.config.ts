@@ -13,6 +13,6 @@ export default defineConfig({
       srcDirectory: "app",
       routesDirectory: "routes",
     }),
-    nitro(),
+    nitro({ serverDir: "app/server" }),
   ],
 });

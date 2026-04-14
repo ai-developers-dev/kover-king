@@ -107,3 +107,47 @@ export const loginAdmin = createServerFn({ method: "POST" })
     }
     return { success: false as const, error: "Invalid credentials" };
   });
+
+export const submitQuoteFromLead = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      phone: string;
+      address?: string;
+      zip?: string;
+      home_value?: string;
+      year_built?: string;
+      home_type?: string;
+      current_carrier?: string;
+    }) => data
+  )
+  .handler(async ({ data }) => {
+    await initDb();
+    const details = [
+      data.home_value && `Home Value: ${data.home_value}`,
+      data.year_built && `Year Built: ${data.year_built}`,
+      data.home_type && `Home Type: ${data.home_type}`,
+      data.current_carrier && `Current Carrier: ${data.current_carrier}`,
+      "Source: Meta Lead Ad",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    await db.execute({
+      sql: "INSERT INTO quotes (first_name, last_name, email, phone, insurance_type, address, state, zip, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      args: [
+        data.first_name,
+        data.last_name,
+        data.email,
+        data.phone,
+        "Home",
+        data.address || null,
+        "IL",
+        data.zip || null,
+        details,
+      ],
+    });
+    return { success: true };
+  });

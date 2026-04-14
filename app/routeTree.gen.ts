@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as QuoteContinueRouteImport } from './routes/quote-continue'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as LifeInsuranceSpringfieldIlRouteImport } from './routes/life-insurance-springfield-il'
 import { Route as LifeRouteImport } from './routes/life'
@@ -34,6 +35,11 @@ import { Route as AdminDashboardRouteImport } from './routes/admin_.dashboard'
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
   id: '/terms-of-service',
   path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuoteContinueRoute = QuoteContinueRouteImport.update({
+  id: '/quote-continue',
+  path: '/quote-continue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/quote-continue': typeof QuoteContinueRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
 }
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/quote-continue': typeof QuoteContinueRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
 }
@@ -210,6 +218,7 @@ export interface FileRoutesById {
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/quote-continue': typeof QuoteContinueRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin_/dashboard': typeof AdminDashboardRoute
 }
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/life'
     | '/life-insurance-springfield-il'
     | '/privacy-policy'
+    | '/quote-continue'
     | '/terms-of-service'
     | '/admin/dashboard'
   fileRoutesByTo: FileRoutesByTo
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/life'
     | '/life-insurance-springfield-il'
     | '/privacy-policy'
+    | '/quote-continue'
     | '/terms-of-service'
     | '/admin/dashboard'
   id:
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/life'
     | '/life-insurance-springfield-il'
     | '/privacy-policy'
+    | '/quote-continue'
     | '/terms-of-service'
     | '/admin_/dashboard'
   fileRoutesById: FileRoutesById
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   LifeRoute: typeof LifeRoute
   LifeInsuranceSpringfieldIlRoute: typeof LifeInsuranceSpringfieldIlRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  QuoteContinueRoute: typeof QuoteContinueRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
 }
@@ -316,6 +329,13 @@ declare module '@tanstack/react-router' {
       path: '/terms-of-service'
       fullPath: '/terms-of-service'
       preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quote-continue': {
+      id: '/quote-continue'
+      path: '/quote-continue'
+      fullPath: '/quote-continue'
+      preLoaderRoute: typeof QuoteContinueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -481,6 +501,7 @@ const rootRouteChildren: RootRouteChildren = {
   LifeRoute: LifeRoute,
   LifeInsuranceSpringfieldIlRoute: LifeInsuranceSpringfieldIlRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
+  QuoteContinueRoute: QuoteContinueRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   AdminDashboardRoute: AdminDashboardRoute,
 }
