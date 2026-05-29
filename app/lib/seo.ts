@@ -16,7 +16,7 @@ export function canonical(path: string): string {
 // what the site displays; do NOT invent a different address.
 export const NAP = {
   name: "Kover King Insurance",
-  streetAddress: "[STREET ADDRESS]",
+  streetAddress: "7612 Wentworth Dr.",
   addressLocality: "Springfield",
   addressRegion: "IL",
   postalCode: "62711",

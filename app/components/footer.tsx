@@ -90,7 +90,7 @@ export function Footer() {
               <div className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
                 <span>
-                  [STREET ADDRESS]
+                  7612 Wentworth Dr.
                   <br />
                   Springfield, IL 62711
                 </span>
@@ -247,7 +247,7 @@ export function Footer() {
             url: "https://koverking.com",
             address: {
               "@type": "PostalAddress",
-              streetAddress: "[STREET ADDRESS]",
+              streetAddress: "7612 Wentworth Dr.",
               addressLocality: "Springfield",
               addressRegion: "IL",
               postalCode: "62711",

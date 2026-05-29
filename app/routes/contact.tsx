@@ -529,7 +529,7 @@ function ContactPage() {
                         Office
                       </div>
                       <div className="text-text-primary font-semibold">
-                        [STREET ADDRESS]
+                        7612 Wentworth Dr.
                         <br />
                         Springfield, IL 62711
                       </div>
