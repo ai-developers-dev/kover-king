@@ -563,6 +563,8 @@ function ContactPage() {
                 <div className="bg-cream h-52 flex flex-col items-center justify-center">
                   <MapPin className="w-10 h-10 text-primary-400 mb-2" />
                   <p className="text-primary-600 font-semibold text-sm">
+                    7612 Wentworth Dr.
+                    <br />
                     Springfield, IL 62711
                   </p>
                   <p className="text-primary-400 text-xs mt-1">
@@ -571,7 +573,7 @@ function ContactPage() {
                 </div>
                 <div className="p-4">
                   <a
-                    href="https://maps.google.com/?q=Springfield+IL+62711"
+                    href="https://maps.google.com/?q=7612+Wentworth+Dr+Springfield+IL+62711"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full text-center text-primary-500 font-semibold text-sm hover:underline py-1"
