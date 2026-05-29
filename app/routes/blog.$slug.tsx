@@ -1,13 +1,38 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Clock, Phone } from "lucide-react";
 import { jsonLd, articleSchema, breadcrumbSchema, canonical } from "~/lib/seo";
-import { getPostBySlug, formatPostDate, type BlogBlock } from "~/content/blog";
+import { parseBody, formatPostDate, type BlogBlock } from "~/content/blog";
+import { getPublishedPost } from "~/lib/actions";
+
+type LoadedPost = {
+  slug: string;
+  title: string;
+  description: string;
+  category: string | null;
+  author: string | null;
+  readMinutes: number | null;
+  datePublished: string;
+  blocks: BlogBlock[];
+};
 
 export const Route = createFileRoute("/blog/$slug")({
-  loader: ({ params }) => {
-    const post = getPostBySlug(params.slug);
-    if (!post) throw notFound();
-    return { post };
+  loader: async ({ params }): Promise<{ post: LoadedPost }> => {
+    const row = (await getPublishedPost({
+      data: { slug: params.slug },
+    })) as Record<string, unknown> | null;
+    if (!row) throw notFound();
+    return {
+      post: {
+        slug: String(row.slug),
+        title: String(row.title),
+        description: String(row.description),
+        category: row.category ? String(row.category) : null,
+        author: row.author ? String(row.author) : null,
+        readMinutes: row.read_minutes == null ? null : Number(row.read_minutes),
+        datePublished: String(row.date_published),
+        blocks: parseBody(String(row.body ?? "")),
+      },
+    };
   },
   head: ({ loaderData }) => {
     const post = loaderData?.post;
@@ -100,7 +125,7 @@ function BlogPostPage() {
             <p className="text-xl text-text-secondary leading-relaxed font-medium border-l-4 border-primary-500 pl-5 mb-8">
               {post.description}
             </p>
-            {post.body.map((block, i) => (
+            {post.blocks.map((block, i) => (
               <Block key={i} block={block} />
             ))}
           </div>

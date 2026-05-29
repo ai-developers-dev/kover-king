@@ -1,101 +1,93 @@
-// Blog content store.
+// Blog content helpers.
 //
-// Posts live here as plain data — no CMS, no extra dependencies. To publish a
-// new post, add an object to the `posts` array below. The /blog index and the
-// /blog/$slug template render from this array automatically, and Article +
-// Breadcrumb JSON-LD is generated from each post's metadata.
-//
-// `body` is an ordered list of blocks. Supported block types:
-//   { type: "heading", text }      -> <h2>
-//   { type: "paragraph", text }    -> <p>
-//   { type: "list", items: [...] } -> <ul>
+// Posts are now stored in the database (table `blog_posts`) and managed from
+// the admin dashboard — see app/lib/actions.ts for the create/read/update/delete
+// server functions. This file only holds the shared types and the helpers that
+// turn the admin's plain-text body into rendered blocks.
 
 export type BlogBlock =
   | { type: "heading"; text: string }
   | { type: "paragraph"; text: string }
   | { type: "list"; items: string[] };
 
+// Shape returned to the UI. `body` is the raw text the admin typed; call
+// parseBody(body) to get renderable blocks.
 export type BlogPost = {
   slug: string;
   title: string;
   description: string;
-  /** ISO date, e.g. "2026-05-29". Used for sorting and Article schema. */
+  category?: string | null;
+  author?: string | null;
+  readMinutes?: number | null;
   datePublished: string;
-  dateModified?: string;
-  author?: string;
-  /** Optional short label shown on the card and post (e.g. "Auto Insurance"). */
-  category?: string;
-  /** Estimated read time in minutes, shown on the card/post. */
-  readMinutes?: number;
-  body: BlogBlock[];
+  published: boolean;
+  body: string;
 };
 
-// Sample post so the index and template render out of the box. Replace or
-// remove it as real content is written — every fact below is generic insurance
-// education, not a Kover King business claim.
-export const posts: BlogPost[] = [
-  {
-    slug: "how-to-lower-your-car-insurance-premium",
-    title: "How to Lower Your Car Insurance Premium",
-    description:
-      "Practical, no-nonsense ways to reduce your auto insurance costs without sacrificing the coverage you actually need.",
-    datePublished: "2026-05-29",
-    author: "Kover King Insurance",
-    category: "Auto Insurance",
-    readMinutes: 4,
-    body: [
-      {
-        type: "paragraph",
-        text: "Car insurance is one of those bills most people set and forget. But premiums change every year, and a little attention at renewal time can put real money back in your pocket. Here are the levers that actually move your rate.",
-      },
-      { type: "heading", text: "Raise your deductible" },
-      {
-        type: "paragraph",
-        text: "Your deductible is what you pay out of pocket before coverage kicks in. Moving from a $250 to a $500 or $1,000 deductible can noticeably lower your premium — just make sure you keep enough in savings to cover the higher amount if you need to file a claim.",
-      },
-      { type: "heading", text: "Bundle your policies" },
-      {
-        type: "paragraph",
-        text: "Insuring your home (or renters) and auto with the same carrier often unlocks a multi-policy discount. As an independent agency, we can compare bundle pricing across carriers to find where the combined savings are largest.",
-      },
-      { type: "heading", text: "Ask about every discount you qualify for" },
-      {
-        type: "list",
-        items: [
-          "Safe-driver and accident-free discounts",
-          "Good-student discounts for drivers under 25",
-          "Low-mileage or usage-based (telematics) programs",
-          "Paid-in-full and paperless billing discounts",
-        ],
-      },
-      { type: "heading", text: "Review your coverage on older vehicles" },
-      {
-        type: "paragraph",
-        text: "If your car is paid off and its value has dropped, carrying collision and comprehensive may no longer make financial sense. A quick policy review can tell you whether you are paying to insure more than the car is worth.",
-      },
-      { type: "heading", text: "Shop your rate, don't just renew" },
-      {
-        type: "paragraph",
-        text: "The single biggest mistake drivers make is auto-renewing without comparison. Rates for the same driver can vary by hundreds of dollars between carriers. If you'd like a no-obligation comparison, give us a call — we'll do the shopping for you.",
-      },
-    ],
-  },
-];
+/**
+ * Turn the admin's plain-text body into renderable blocks.
+ *
+ * Formatting rules (kept deliberately simple):
+ *   - A line starting with "## " becomes a heading.
+ *   - One or more consecutive lines starting with "- " become a bullet list.
+ *   - Any other run of non-blank lines becomes a paragraph.
+ *   - Blank lines separate blocks.
+ */
+export function parseBody(raw: string): BlogBlock[] {
+  const lines = (raw ?? "").replace(/\r\n/g, "\n").split("\n");
+  const blocks: BlogBlock[] = [];
+  let paragraph: string[] = [];
+  let list: string[] = [];
 
-export function getAllPosts(): BlogPost[] {
-  // Newest first.
-  return [...posts].sort((a, b) =>
-    a.datePublished < b.datePublished ? 1 : a.datePublished > b.datePublished ? -1 : 0
-  );
+  const flushParagraph = () => {
+    if (paragraph.length) {
+      blocks.push({ type: "paragraph", text: paragraph.join(" ").trim() });
+      paragraph = [];
+    }
+  };
+  const flushList = () => {
+    if (list.length) {
+      blocks.push({ type: "list", items: list });
+      list = [];
+    }
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === "") {
+      flushParagraph();
+      flushList();
+    } else if (trimmed.startsWith("## ")) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "heading", text: trimmed.slice(3).trim() });
+    } else if (trimmed.startsWith("- ")) {
+      flushParagraph();
+      list.push(trimmed.slice(2).trim());
+    } else {
+      flushList();
+      paragraph.push(trimmed);
+    }
+  }
+  flushParagraph();
+  flushList();
+  return blocks;
 }
 
-export function getPostBySlug(slug: string): BlogPost | undefined {
-  return posts.find((p) => p.slug === slug);
+/** Turn a title into a URL-safe slug, e.g. "My Post!" -> "my-post". */
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /** Format an ISO date as e.g. "May 29, 2026" for display. */
 export function formatPostDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y, m, d] = (iso ?? "").split("-").map(Number);
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",

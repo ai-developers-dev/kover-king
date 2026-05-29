@@ -1,9 +1,32 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Calendar, Clock, BookOpen } from "lucide-react";
 import { jsonLd, breadcrumbSchema } from "~/lib/seo";
-import { getAllPosts, formatPostDate } from "~/content/blog";
+import { formatPostDate } from "~/content/blog";
+import { getPublishedPosts } from "~/lib/actions";
+
+type PostCard = {
+  slug: string;
+  title: string;
+  description: string;
+  category: string | null;
+  readMinutes: number | null;
+  datePublished: string;
+};
 
 export const Route = createFileRoute("/blog/")({
+  loader: async (): Promise<{ posts: PostCard[] }> => {
+    const rows = (await getPublishedPosts()) as Record<string, unknown>[];
+    return {
+      posts: rows.map((r) => ({
+        slug: String(r.slug),
+        title: String(r.title),
+        description: String(r.description),
+        category: r.category ? String(r.category) : null,
+        readMinutes: r.read_minutes == null ? null : Number(r.read_minutes),
+        datePublished: String(r.date_published),
+      })),
+    };
+  },
   head: () => ({
     meta: [
       { title: "Insurance Tips & Guides | Kover King Blog" },
@@ -25,7 +48,7 @@ export const Route = createFileRoute("/blog/")({
 });
 
 function BlogIndexPage() {
-  const posts = getAllPosts();
+  const { posts } = Route.useLoaderData();
 
   return (
     <div className="min-h-screen">

@@ -5,7 +5,13 @@ import {
   getContacts,
   deleteQuote,
   deleteContact,
+  logoutAdmin,
+  getBlogPostsAdmin,
+  createBlogPost,
+  updateBlogPost,
+  deleteBlogPost,
 } from "~/lib/actions";
+import { slugify } from "~/content/blog";
 import {
   FileText,
   MessageSquare,
@@ -20,7 +26,46 @@ import {
   Shield,
   ChevronDown,
   ChevronUp,
+  BookOpen,
+  Plus,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
+
+function getToken(): string {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem("admin-token") || "";
+}
+
+type BlogFormState = {
+  originalSlug: string | null; // null = creating a new post
+  title: string;
+  slug: string;
+  description: string;
+  category: string;
+  author: string;
+  readMinutes: string;
+  datePublished: string;
+  published: boolean;
+  body: string;
+};
+
+function emptyBlogForm(): BlogFormState {
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    originalSlug: null,
+    title: "",
+    slug: "",
+    description: "",
+    category: "",
+    author: "Kover King Insurance",
+    readMinutes: "",
+    datePublished: today,
+    published: true,
+    body: "",
+  };
+}
 
 export const Route = createFileRoute("/admin_/dashboard")({
   head: () => ({
@@ -32,7 +77,7 @@ export const Route = createFileRoute("/admin_/dashboard")({
   component: DashboardPage,
 });
 
-type Tab = "quotes" | "contacts";
+type Tab = "quotes" | "contacts" | "blog";
 
 const insuranceIcon: Record<string, typeof Car> = {
   Auto: Car,
@@ -50,6 +95,13 @@ function DashboardPage() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [posts, setPosts] = useState<any[]>([]);
+  const [blogForm, setBlogForm] = useState<BlogFormState | null>(null);
+  const [blogSaving, setBlogSaving] = useState(false);
+  const [blogError, setBlogError] = useState("");
+  // Whether the slug has been hand-edited (so we stop auto-deriving it).
+  const [slugTouched, setSlugTouched] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -64,34 +116,124 @@ function DashboardPage() {
 
   const loadData = async () => {
     setLoading(true);
+    const token = getToken();
     try {
-      const [q, c] = await Promise.all([
-        getQuotes({ data: {} }),
-        getContacts({ data: {} }),
+      const [q, c, p] = await Promise.all([
+        getQuotes({ data: { token } }),
+        getContacts({ data: { token } }),
+        getBlogPostsAdmin({ data: { token } }),
       ]);
       setQuotes(q as any[]);
       setContacts(c as any[]);
+      setPosts(p as any[]);
     } catch {
-      // If fetch fails, might need re-auth
+      // A failure here usually means the session expired — send back to login.
+      sessionStorage.removeItem("admin-token");
+      navigate({ to: "/admin" });
     }
     setLoading(false);
   };
 
   const handleDeleteQuote = async (id: number) => {
-    await deleteQuote({ data: { id } });
+    await deleteQuote({ data: { token: getToken(), id } });
     setQuotes((prev) => prev.filter((q) => q.id !== id));
   };
 
   const handleDeleteContact = async (id: number) => {
-    await deleteContact({ data: { id } });
+    await deleteContact({ data: { token: getToken(), id } });
     setContacts((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutAdmin({ data: { token: getToken() } });
+    } catch {
+      // Ignore — we clear locally regardless.
+    }
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("admin-token");
     }
     navigate({ to: "/admin" });
+  };
+
+  // ── Blog editor handlers ──
+  const startNewPost = () => {
+    setBlogError("");
+    setSlugTouched(false);
+    setBlogForm(emptyBlogForm());
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const startEditPost = (p: any) => {
+    setBlogError("");
+    setSlugTouched(true);
+    setBlogForm({
+      originalSlug: String(p.slug),
+      title: String(p.title),
+      slug: String(p.slug),
+      description: String(p.description),
+      category: p.category ? String(p.category) : "",
+      author: p.author ? String(p.author) : "",
+      readMinutes: p.read_minutes == null ? "" : String(p.read_minutes),
+      datePublished: String(p.date_published),
+      published: Number(p.published) === 1,
+      body: String(p.body ?? ""),
+    });
+  };
+
+  const cancelBlogForm = () => {
+    setBlogForm(null);
+    setBlogError("");
+  };
+
+  const updateForm = (patch: Partial<BlogFormState>) =>
+    setBlogForm((f) => (f ? { ...f, ...patch } : f));
+
+  const handleSaveBlog = async () => {
+    if (!blogForm) return;
+    setBlogError("");
+    if (!blogForm.title.trim() || !blogForm.description.trim() || !blogForm.body.trim()) {
+      setBlogError("Title, description, and body are required.");
+      return;
+    }
+    const slug = (blogForm.slug || slugify(blogForm.title)).trim();
+    if (!slug) {
+      setBlogError("Please provide a URL (slug) for the post.");
+      return;
+    }
+    setBlogSaving(true);
+    const payload = {
+      token: getToken(),
+      slug,
+      title: blogForm.title.trim(),
+      description: blogForm.description.trim(),
+      category: blogForm.category.trim() || undefined,
+      author: blogForm.author.trim() || undefined,
+      readMinutes: blogForm.readMinutes ? Number(blogForm.readMinutes) : undefined,
+      body: blogForm.body,
+      published: blogForm.published,
+      datePublished: blogForm.datePublished,
+    };
+    try {
+      const result = blogForm.originalSlug
+        ? await updateBlogPost({ data: { ...payload, originalSlug: blogForm.originalSlug } })
+        : await createBlogPost({ data: payload });
+      if (!result.success) {
+        setBlogError(result.error || "Could not save the post.");
+        setBlogSaving(false);
+        return;
+      }
+      setBlogForm(null);
+      await loadData();
+    } catch {
+      setBlogError("Could not save the post. Your session may have expired.");
+    }
+    setBlogSaving(false);
+  };
+
+  const handleDeletePost = async (slug: string) => {
+    await deleteBlogPost({ data: { token: getToken(), slug } });
+    setPosts((prev) => prev.filter((p) => p.slug !== slug));
   };
 
   const toggleExpand = (id: string) => {
@@ -214,6 +356,17 @@ function DashboardPage() {
             <MessageSquare className="w-4 h-4" />
             Contacts ({contacts.length})
           </button>
+          <button
+            onClick={() => setTab("blog")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              tab === "blog"
+                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            Blog ({posts.length})
+          </button>
         </div>
 
         {/* Content */}
@@ -221,6 +374,22 @@ function DashboardPage() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
           </div>
+        ) : tab === "blog" ? (
+          <BlogPanel
+            posts={posts}
+            form={blogForm}
+            saving={blogSaving}
+            error={blogError}
+            slugTouched={slugTouched}
+            setSlugTouched={setSlugTouched}
+            onNew={startNewPost}
+            onEdit={startEditPost}
+            onDelete={handleDeletePost}
+            onCancel={cancelBlogForm}
+            onSave={handleSaveBlog}
+            updateForm={updateForm}
+            formatDate={formatDate}
+          />
         ) : tab === "quotes" ? (
           <div className="space-y-3">
             {quotes.length === 0 ? (
@@ -449,6 +618,313 @@ function DashboardPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Blog management panel ───────────────────────────────────────────────────
+
+function BlogPanel({
+  posts,
+  form,
+  saving,
+  error,
+  slugTouched,
+  setSlugTouched,
+  onNew,
+  onEdit,
+  onDelete,
+  onCancel,
+  onSave,
+  updateForm,
+  formatDate,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  posts: any[];
+  form: BlogFormState | null;
+  saving: boolean;
+  error: string;
+  slugTouched: boolean;
+  setSlugTouched: (b: boolean) => void;
+  onNew: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEdit: (p: any) => void;
+  onDelete: (slug: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
+  updateForm: (patch: Partial<BlogFormState>) => void;
+  formatDate: (d: unknown) => string;
+}) {
+  const fieldClass =
+    "w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition placeholder-gray-400";
+
+  if (form) {
+    const finalSlug = (form.slug || "").trim();
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-heading text-xl font-bold text-text-primary">
+            {form.originalSlug ? "Edit Post" : "New Post"}
+          </h2>
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Cancel
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-5">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => {
+                const title = e.target.value;
+                updateForm(
+                  slugTouched
+                    ? { title }
+                    : { title, slug: slugify(title) }
+                );
+              }}
+              placeholder="How to Choose the Right Home Insurance"
+              className={fieldClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              URL (slug) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                updateForm({ slug: slugify(e.target.value) });
+              }}
+              placeholder="how-to-choose-home-insurance"
+              className={fieldClass}
+            />
+            <p className="text-xs text-text-muted mt-1">
+              Page address: koverking.com/blog/{finalSlug || "your-slug"}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Short description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => updateForm({ description: e.target.value })}
+              rows={2}
+              placeholder="One or two sentences shown on the blog list and under the title."
+              className={`${fieldClass} resize-none`}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                Category
+              </label>
+              <input
+                type="text"
+                value={form.category}
+                onChange={(e) => updateForm({ category: e.target.value })}
+                placeholder="Auto Insurance"
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                Read time (minutes)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={form.readMinutes}
+                onChange={(e) => updateForm({ readMinutes: e.target.value })}
+                placeholder="4"
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                Publish date
+              </label>
+              <input
+                type="date"
+                value={form.datePublished}
+                onChange={(e) => updateForm({ datePublished: e.target.value })}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Author
+            </label>
+            <input
+              type="text"
+              value={form.author}
+              onChange={(e) => updateForm({ author: e.target.value })}
+              placeholder="Kover King Insurance"
+              className={fieldClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Body <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={form.body}
+              onChange={(e) => updateForm({ body: e.target.value })}
+              rows={16}
+              placeholder={
+                "Write your article here.\n\nLeave a blank line between paragraphs.\n\n## Type two hashes for a section heading\n\n- Start a line with a dash for a bullet\n- Like this"
+              }
+              className={`${fieldClass} resize-y font-mono leading-relaxed`}
+            />
+            <div className="text-xs text-text-muted mt-2 bg-surface rounded-lg p-3 leading-relaxed">
+              <strong className="text-text-secondary">Formatting:</strong> Blank
+              line = new paragraph &nbsp;·&nbsp; <code>## </code> at the start of
+              a line = section heading &nbsp;·&nbsp; <code>- </code> at the start
+              of a line = bullet point.
+            </div>
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.published}
+              onChange={(e) => updateForm({ published: e.target.checked })}
+              className="w-4 h-4 accent-primary-500"
+            />
+            <span className="text-sm text-text-primary">
+              Published{" "}
+              <span className="text-text-muted">
+                (uncheck to save as a hidden draft)
+              </span>
+            </span>
+          </label>
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-colors shadow-[0_8px_30px_-8px_rgba(233,86,12,0.4)]"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  {form.originalSlug ? "Save Changes" : "Publish Post"}
+                </>
+              )}
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-6 py-3 text-sm font-semibold text-text-secondary hover:text-text-primary bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5">
+        <p className="text-sm text-text-muted">
+          {posts.length} {posts.length === 1 ? "post" : "posts"}
+        </p>
+        <button
+          onClick={onNew}
+          className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+        >
+          <Plus className="w-4 h-4" />
+          New Post
+        </button>
+      </div>
+
+      {posts.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-text-muted">
+            No blog posts yet. Click “New Post” to write your first one.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {posts.map((p) => (
+            <div
+              key={String(p.slug)}
+              className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4"
+            >
+              <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
+                <BookOpen className="w-5 h-5 text-primary-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-text-primary text-sm truncate">
+                  {String(p.title)}
+                  {Number(p.published) !== 1 && (
+                    <span className="ml-2 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                      Draft
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-text-muted truncate">
+                  /blog/{String(p.slug)} · {formatDate(p.date_published)}
+                </p>
+              </div>
+              {Number(p.published) === 1 && (
+                <a
+                  href={`/blog/${String(p.slug)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold text-primary-500 hover:underline hidden sm:block"
+                >
+                  View
+                </a>
+              )}
+              <button
+                onClick={() => onEdit(p)}
+                className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(String(p.slug))}
+                className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

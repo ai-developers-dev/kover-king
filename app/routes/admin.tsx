@@ -40,7 +40,7 @@ function AdminLoginPage() {
 
       if (result.success) {
         if (typeof window !== "undefined") {
-          sessionStorage.setItem("admin-token", "admin-session");
+          sessionStorage.setItem("admin-token", result.token);
         }
         navigate({ to: "/admin/dashboard" });
       } else {

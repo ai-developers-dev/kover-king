@@ -26,6 +26,41 @@ export async function initDb() {
     await db.execute(
       "CREATE TABLE IF NOT EXISTS lead_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER NOT NULL, token TEXT UNIQUE NOT NULL, expires_at DATETIME NOT NULL, used_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
     );
+    // Blog posts authored from the admin dashboard.
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS blog_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT UNIQUE NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, category TEXT, author TEXT, read_minutes INTEGER, body TEXT NOT NULL, published INTEGER NOT NULL DEFAULT 1, date_published TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    // Server-side admin sessions (token validated on every protected call).
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS admin_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT UNIQUE NOT NULL, expires_at DATETIME NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    // Seed the original sample post once so existing /blog links keep working.
+    await db.execute({
+      sql: "INSERT OR IGNORE INTO blog_posts (slug, title, description, category, author, read_minutes, body, published, date_published) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)",
+      args: [
+        "how-to-lower-your-car-insurance-premium",
+        "How to Lower Your Car Insurance Premium",
+        "Practical, no-nonsense ways to reduce your auto insurance costs without sacrificing the coverage you actually need.",
+        "Auto Insurance",
+        "Kover King Insurance",
+        4,
+        [
+          "Car insurance is one of those bills most people set and forget. But premiums change every year, and a little attention at renewal time can put real money back in your pocket. Here are the levers that actually move your rate.",
+          "## Raise your deductible",
+          "Your deductible is what you pay out of pocket before coverage kicks in. Moving from a $250 to a $500 or $1,000 deductible can noticeably lower your premium — just make sure you keep enough in savings to cover the higher amount if you need to file a claim.",
+          "## Bundle your policies",
+          "Insuring your home (or renters) and auto with the same carrier often unlocks a multi-policy discount. As an independent agency, we can compare bundle pricing across carriers to find where the combined savings are largest.",
+          "## Ask about every discount you qualify for",
+          "- Safe-driver and accident-free discounts",
+          "- Good-student discounts for drivers under 25",
+          "- Low-mileage or usage-based (telematics) programs",
+          "- Paid-in-full and paperless billing discounts",
+          "## Shop your rate, don't just renew",
+          "The single biggest mistake drivers make is auto-renewing without comparison. Rates for the same driver can vary by hundreds of dollars between carriers. If you'd like a no-obligation comparison, give us a call — we'll do the shopping for you.",
+        ].join("\n"),
+        "2026-05-29",
+      ],
+    });
     initialized = true;
     console.log("[DB] initDb complete");
   } catch (err) {
