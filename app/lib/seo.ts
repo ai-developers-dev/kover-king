@@ -19,7 +19,7 @@ export const NAP = {
   streetAddress: "[STREET ADDRESS]",
   addressLocality: "Springfield",
   addressRegion: "IL",
-  postalCode: "62701",
+  postalCode: "62711",
   telephone: "+1-217-960-8997",
   telephoneDisplay: "(217) 960-8997",
   email: "info@koverking.com",

@@ -92,7 +92,7 @@ export function Footer() {
                 <span>
                   [STREET ADDRESS]
                   <br />
-                  Springfield, IL 62701
+                  Springfield, IL 62711
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -214,9 +214,6 @@ export function Footer() {
             <p className="text-xs text-gray-600 italic">
               Serving all of Sangamon County and Central Illinois
             </p>
-            <p className="text-xs text-gray-600 mt-3">
-              Serving all of Sangamon County and Central Illinois
-            </p>
           </div>
         </div>
       </div>
@@ -253,7 +250,7 @@ export function Footer() {
               streetAddress: "[STREET ADDRESS]",
               addressLocality: "Springfield",
               addressRegion: "IL",
-              postalCode: "62701",
+              postalCode: "62711",
               addressCountry: "US",
             },
             geo: {
