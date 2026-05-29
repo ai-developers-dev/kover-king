@@ -93,6 +93,33 @@ export function breadcrumbSchema(crumbs: { name: string; path: string }[]) {
   };
 }
 
+/** Article schema for a blog post. dates are ISO strings (e.g. "2026-05-29"). */
+export function articleSchema(opts: {
+  headline: string;
+  description: string;
+  path: string;
+  datePublished: string;
+  dateModified?: string;
+  author?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: opts.headline,
+    description: opts.description,
+    datePublished: opts.datePublished,
+    dateModified: opts.dateModified ?? opts.datePublished,
+    author: { "@type": "Organization", name: opts.author ?? NAP.name },
+    publisher: {
+      "@type": "Organization",
+      name: NAP.name,
+      url: SITE_URL,
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonical(opts.path) },
+    url: canonical(opts.path),
+  };
+}
+
 /** Serialize one or more schema objects for a JSON-LD <script> tag. */
 export function jsonLd(...schemas: object[]): string {
   return JSON.stringify(schemas.length === 1 ? schemas[0] : schemas);

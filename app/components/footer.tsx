@@ -11,6 +11,7 @@ const insuranceLinks = [
 
 const companyLinks = [
   { label: "About Us", to: "/about" },
+  { label: "Blog", to: "/blog" },
   { label: "Contact", to: "/contact" },
   { label: "Privacy Policy", to: "/privacy-policy" },
   { label: "Terms of Service", to: "/terms-of-service" },

@@ -71,6 +71,16 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://koverking.com/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://koverking.com/blog/how-to-lower-your-car-insurance-premium</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://koverking.com/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

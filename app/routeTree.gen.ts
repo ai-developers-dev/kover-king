@@ -30,6 +30,8 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminDashboardRouteImport } from './routes/admin_.dashboard'
 
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
@@ -143,6 +145,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/admin_/dashboard',
   path: '/admin/dashboard',
@@ -172,6 +184,8 @@ export interface FileRoutesByFullPath {
   '/quote-continue': typeof QuoteContinueRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/blog/': typeof BlogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -196,6 +210,8 @@ export interface FileRoutesByTo {
   '/quote-continue': typeof QuoteContinueRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/blog': typeof BlogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -221,6 +237,8 @@ export interface FileRoutesById {
   '/quote-continue': typeof QuoteContinueRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin_/dashboard': typeof AdminDashboardRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/blog/': typeof BlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -247,6 +265,8 @@ export interface FileRouteTypes {
     | '/quote-continue'
     | '/terms-of-service'
     | '/admin/dashboard'
+    | '/blog/$slug'
+    | '/blog/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -271,6 +291,8 @@ export interface FileRouteTypes {
     | '/quote-continue'
     | '/terms-of-service'
     | '/admin/dashboard'
+    | '/blog/$slug'
+    | '/blog'
   id:
     | '__root__'
     | '/'
@@ -295,6 +317,8 @@ export interface FileRouteTypes {
     | '/quote-continue'
     | '/terms-of-service'
     | '/admin_/dashboard'
+    | '/blog/$slug'
+    | '/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -320,6 +344,8 @@ export interface RootRouteChildren {
   QuoteContinueRoute: typeof QuoteContinueRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  BlogSlugRoute: typeof BlogSlugRoute
+  BlogIndexRoute: typeof BlogIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -471,6 +497,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/dashboard': {
       id: '/admin_/dashboard'
       path: '/admin/dashboard'
@@ -504,6 +544,8 @@ const rootRouteChildren: RootRouteChildren = {
   QuoteContinueRoute: QuoteContinueRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  BlogSlugRoute: BlogSlugRoute,
+  BlogIndexRoute: BlogIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
