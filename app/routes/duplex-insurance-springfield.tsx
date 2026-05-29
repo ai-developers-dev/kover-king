@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 import { useState } from "react";
 import {
   Home,
@@ -24,8 +25,7 @@ export const Route = createFileRoute("/duplex-insurance-springfield")({
   head: () => ({
     meta: [
       {
-        title:
-          "Duplex Insurance Springfield IL | Multi-Family Coverage | Kover King",
+        title: "Duplex Insurance in Springfield, IL | Kover King",
       },
       {
         name: "description",
@@ -34,8 +34,7 @@ export const Route = createFileRoute("/duplex-insurance-springfield")({
       },
       {
         property: "og:title",
-        content:
-          "Duplex Insurance Springfield IL | Multi-Family Coverage | Kover King",
+        content: "Duplex Insurance in Springfield, IL | Kover King",
       },
       {
         property: "og:description",
@@ -48,6 +47,7 @@ export const Route = createFileRoute("/duplex-insurance-springfield")({
           "duplex insurance Springfield IL, multi-family insurance Springfield, landlord insurance Springfield Illinois, owner-occupied duplex insurance, investment property insurance Springfield",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/duplex-insurance-springfield" }],
   }),
   component: DuplexInsuranceSpringfieldPage,
 });
@@ -698,6 +698,13 @@ function DuplexInsuranceSpringfieldPage() {
         </div>
       </section>
 
+      {/* Cross-link to product page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">Want the full coverage breakdown?{" "}<Link to="/duplex-insurance" className="text-primary-500 font-semibold hover:underline">Explore our duplex insurance coverage options</Link>.</p>
+        </div>
+      </section>
+
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -726,6 +733,27 @@ function DuplexInsuranceSpringfieldPage() {
           </div>
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Duplex Insurance in Springfield, IL",
+              description:
+                "Local duplex and two-family property insurance for Springfield, IL owners — dwelling, liability, and lost-rent coverage.",
+              serviceType: "Duplex insurance",
+              path: "/duplex-insurance-springfield",
+              areaServed: "Springfield, IL",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Duplex Insurance in Springfield, IL", path: "/duplex-insurance-springfield" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

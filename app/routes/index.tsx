@@ -21,14 +21,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { canonical, jsonLd, faqPageSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
   head: () => ({
     meta: [
       {
-        title:
-          "Kover King Insurance | Springfield IL Insurance Agency | (217) 960-8997",
+        title: "Kover King Insurance | Springfield, IL Insurance Agency",
       },
       {
         name: "description",
@@ -37,8 +37,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content:
-          "Kover King Insurance | Springfield IL Insurance Agency | (217) 960-8997",
+        content: "Kover King Insurance | Springfield, IL Insurance Agency",
       },
       {
         property: "og:description",
@@ -50,6 +49,7 @@ export const Route = createFileRoute("/")({
         content: "website",
       },
     ],
+    links: [{ rel: "canonical", href: canonical("/") }],
   }),
 });
 
@@ -238,17 +238,18 @@ function HomePage() {
               </div>
 
               <h1 className="font-heading text-5xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-6xl lg:text-7xl">
-                Your Trusted{" "}
                 <span className="relative inline-block">
-                  <span className="relative z-10">Springfield</span>
+                  <span className="relative z-10">Springfield, IL</span>
                   <span
                     aria-hidden="true"
                     className="absolute bottom-1 left-0 right-0 h-3 rounded-sm bg-primary-500 opacity-20"
                   />
                 </span>{" "}
+                Insurance Agency{" "}
                 <br className="hidden sm:block" />
-                Insurance{" "}
-                <span className="border-b-4 border-primary-500">Agency</span>
+                <span className="border-b-4 border-primary-500">
+                  Compare 30+ Carriers
+                </span>
               </h1>
 
               <p className="mt-6 text-xl leading-relaxed text-text-secondary">
@@ -753,6 +754,12 @@ function HomePage() {
           </p>
         </div>
       </section>
+
+      {/* FAQPage structured data (mirrors the on-page FAQ above) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(faqPageSchema(faqs)) }}
+      />
     </div>
   );
 }

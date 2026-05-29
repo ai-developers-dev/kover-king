@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 import {
   Car,
   ShieldCheck,
@@ -29,8 +30,7 @@ export const Route = createFileRoute("/auto-insurance-springfield-il")({
   head: () => ({
     meta: [
       {
-        title:
-          "Auto Insurance Springfield IL | Compare Car Insurance Rates | Kover King",
+        title: "Auto Insurance in Springfield, IL | Kover King",
       },
       {
         name: "description",
@@ -44,8 +44,7 @@ export const Route = createFileRoute("/auto-insurance-springfield-il")({
       },
       {
         property: "og:title",
-        content:
-          "Auto Insurance Springfield IL | Compare Car Insurance Rates | Kover King",
+        content: "Auto Insurance in Springfield, IL | Kover King",
       },
       {
         property: "og:description",
@@ -53,6 +52,7 @@ export const Route = createFileRoute("/auto-insurance-springfield-il")({
           "Compare Springfield IL auto insurance from 30+ carriers. Save on liability, collision & comprehensive coverage. Free quotes — call (217) 960-8997.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/auto-insurance-springfield-il" }],
   }),
   component: AutoInsuranceSpringfieldILPage,
 });
@@ -688,6 +688,16 @@ function AutoInsuranceSpringfieldILPage() {
         </div>
       </section>
 
+      {/* Cross-link to product page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Want the full coverage breakdown?{" "}
+            <Link to="/auto" className="text-primary-500 font-semibold hover:underline">Explore our auto insurance coverage options</Link>.
+          </p>
+        </div>
+      </section>
+
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -718,6 +728,17 @@ function AutoInsuranceSpringfieldILPage() {
           </div>
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({ name: "Auto Insurance in Springfield, IL", description: "Local auto insurance for Springfield, IL drivers — Illinois minimum coverage, local risk factors, and quotes from 30+ carriers.", serviceType: "Auto insurance", path: "/auto-insurance-springfield-il", areaServed: "Springfield, IL" }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Auto Insurance in Springfield, IL", path: "/auto-insurance-springfield-il" }]),
+          ),
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 import {
   Briefcase,
   Building2,
@@ -30,8 +31,7 @@ export const Route = createFileRoute("/business-insurance-springfield-il")({
   head: () => ({
     meta: [
       {
-        title:
-          "Business Insurance Springfield IL | Commercial Coverage | Kover King",
+        title: "Business Insurance in Springfield, IL | Kover King",
       },
       {
         name: "description",
@@ -40,8 +40,7 @@ export const Route = createFileRoute("/business-insurance-springfield-il")({
       },
       {
         property: "og:title",
-        content:
-          "Business Insurance Springfield IL | Commercial Coverage | Kover King",
+        content: "Business Insurance in Springfield, IL | Kover King",
       },
       {
         property: "og:description",
@@ -54,6 +53,7 @@ export const Route = createFileRoute("/business-insurance-springfield-il")({
           "business insurance Springfield IL, commercial insurance Springfield Illinois, general liability Springfield IL, workers comp Springfield Illinois, BOP Springfield IL, small business insurance Springfield, commercial property insurance Springfield",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/business-insurance-springfield-il" }],
   }),
   component: BusinessInsuranceSpringfieldPage,
 });
@@ -703,6 +703,40 @@ function BusinessInsuranceSpringfieldPage() {
           </p>
         </div>
       </section>
+
+      {/* Cross-link to product page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Want the full coverage breakdown?{" "}
+            <Link to="/business" className="text-primary-500 font-semibold hover:underline">
+              Explore our business insurance coverage options
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Business Insurance in Springfield, IL",
+              description:
+                "Local commercial insurance for Springfield, IL businesses — liability, property, and workers comp from 30+ carriers.",
+              serviceType: "Business insurance",
+              path: "/business-insurance-springfield-il",
+              areaServed: "Springfield, IL",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Business Insurance in Springfield, IL", path: "/business-insurance-springfield-il" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

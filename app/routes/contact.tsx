@@ -17,8 +17,7 @@ export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
       {
-        title:
-          "Contact Kover King Insurance | Springfield IL | (217) 960-8997",
+        title: "Contact Kover King Insurance | Springfield, IL",
       },
       {
         name: "description",
@@ -26,6 +25,7 @@ export const Route = createFileRoute("/contact")({
           "Contact Kover King Insurance for free insurance quotes. Call (217) 960-8997 or visit our Springfield, IL office.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/contact" }],
   }),
   component: ContactPage,
 });
@@ -529,6 +529,8 @@ function ContactPage() {
                         Office
                       </div>
                       <div className="text-text-primary font-semibold">
+                        [STREET ADDRESS]
+                        <br />
                         Springfield, IL 62701
                       </div>
                       <div className="text-xs text-text-muted">

@@ -15,13 +15,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/home-insurance")({
   head: () => ({
     meta: [
       {
-        title:
-          "Home Insurance Springfield IL | Homeowners Insurance Quotes | Kover King",
+        title: "Home Insurance Coverage | Kover King",
       },
       {
         name: "description",
@@ -30,8 +30,7 @@ export const Route = createFileRoute("/home-insurance")({
       },
       {
         property: "og:title",
-        content:
-          "Home Insurance Springfield IL | Homeowners Insurance Quotes | Kover King",
+        content: "Home Insurance Coverage | Kover King",
       },
       {
         property: "og:description",
@@ -39,6 +38,7 @@ export const Route = createFileRoute("/home-insurance")({
           "Protect your Springfield home with dwelling, liability, and personal property coverage from 30+ carriers.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/home-insurance" }],
   }),
   component: HomeInsurancePage,
 });
@@ -253,16 +253,14 @@ function HomeInsurancePage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-cream text-primary-500 text-sm font-medium px-4 py-2 rounded-full mb-6">
               <Home className="w-4 h-4" />
-              Home Insurance — Springfield, IL
+              Home Insurance — Central Illinois
             </div>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 text-text-primary">
-              Home Insurance in{" "}
-              <span className="text-primary-500">Springfield, IL</span>
+              Home Insurance{" "}
+              <span className="text-primary-500">Coverage Options</span>
             </h1>
             <p className="text-xl text-text-secondary mb-8 leading-relaxed">
-              Your home is your most valuable asset. We'll help you protect it
-              with the right homeowners insurance from 30+ top-rated carriers —
-              at a price that fits your budget.
+              Homeowners insurance bundles four core protections — dwelling, personal property, liability, and loss of use — into one policy. We compare 30+ top-rated carriers to find the right coverage for any homeowner.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <QuoteDialog defaultInsuranceType="Home">
@@ -646,6 +644,9 @@ function HomeInsurancePage() {
         </div>
       </section>
 
+      {/* Cross-link to local Springfield page */}
+      <section className="bg-surface py-10"><div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center"><p className="text-text-secondary">Shopping for a policy in the capital city?{" "}<Link to="/home-insurance-springfield-il" className="text-primary-500 font-semibold hover:underline">See Springfield, IL home insurance rates &amp; local risks</Link>.</p></div></section>
+
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -673,6 +674,26 @@ function HomeInsurancePage() {
           </div>
         </div>
       </section>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Home Insurance",
+              description:
+                "Homeowners insurance coverage — dwelling, personal property, liability, and loss-of-use protection — compared across 30+ carriers.",
+              serviceType: "Home insurance",
+              path: "/home-insurance",
+              areaServed: "Central Illinois",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Home Insurance Coverage", path: "/home-insurance" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

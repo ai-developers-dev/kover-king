@@ -17,30 +17,30 @@ import {
   Users,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/landlord-insurance")({
   head: () => ({
     meta: [
       {
-        title:
-          "Landlord Insurance Springfield IL | Rental Property Coverage | Kover King",
+        title: "Landlord Insurance Coverage | Kover King",
       },
       {
         name: "description",
         content:
-          "Protect your Springfield IL rental properties with landlord insurance from 30+ carriers. Dwelling, liability, loss of rent coverage. Free quotes — call (217) 960-8997.",
+          "Protect your rental properties with landlord insurance from 30+ carriers. Dwelling, liability, loss of rent coverage. Free quotes — call (217) 960-8997.",
       },
       {
         property: "og:title",
-        content:
-          "Landlord Insurance Springfield IL | Rental Property Coverage | Kover King",
+        content: "Landlord Insurance Coverage | Kover King",
       },
       {
         property: "og:description",
         content:
-          "Protect your Springfield IL rental properties with landlord insurance from 30+ carriers. Dwelling, liability, loss of rent coverage. Free quotes — call (217) 960-8997.",
+          "Protect your rental properties with landlord insurance from 30+ carriers. Dwelling, liability, loss of rent coverage. Free quotes — call (217) 960-8997.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/landlord-insurance" }],
   }),
   component: LandlordInsurancePage,
 });
@@ -234,16 +234,18 @@ function LandlordInsurancePage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-cream text-primary-500 text-sm font-medium px-4 py-2 rounded-full mb-6">
               <Building2 className="w-4 h-4" />
-              Landlord Insurance — Springfield, IL
+              Landlord Insurance Coverage
             </div>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 text-text-primary">
-              Landlord Insurance in{" "}
-              <span className="text-primary-500">Springfield, IL</span>
+              Landlord Insurance{" "}
+              <span className="text-primary-500">Coverage Options</span>
             </h1>
             <p className="text-xl text-text-secondary mb-8 leading-relaxed">
-              Your rental property is an investment — protect it with the right
-              landlord insurance from 30+ top-rated carriers. Dwelling coverage,
-              liability protection, and loss of rental income in one policy.
+              Landlord insurance protects rental property owners against the
+              losses that matter most — dwelling damage, liability claims, and
+              lost rental income when a property becomes uninhabitable. Compare
+              coverage across 30+ top-rated carriers to find the right policy
+              for your investment.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <QuoteDialog defaultInsuranceType="Home">
@@ -494,7 +496,7 @@ function LandlordInsurancePage() {
       <section className="bg-primary-500 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-white mb-4">
-            Protect Your Springfield Rental Property Today
+            Protect Your Rental Property Today
           </h2>
           <p className="text-white/80 text-lg mb-8">
             Don't leave your investment unprotected. Get a free landlord
@@ -517,6 +519,40 @@ function LandlordInsurancePage() {
           </div>
         </div>
       </section>
+
+      {/* Cross-link to Springfield local page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Own rentals in the capital city?{" "}
+            <Link to="/landlord-insurance-springfield" className="text-primary-500 font-semibold hover:underline">
+              See Springfield, IL landlord insurance
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Landlord Insurance",
+              description:
+                "Landlord insurance coverage for rental property owners — dwelling protection, liability, and loss of rental income — compared across carriers.",
+              serviceType: "Landlord insurance",
+              path: "/landlord-insurance",
+              areaServed: "Central Illinois",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Landlord Insurance Coverage", path: "/landlord-insurance" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

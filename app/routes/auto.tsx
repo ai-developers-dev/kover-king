@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 import {
   Car,
   ShieldCheck,
@@ -27,8 +28,7 @@ export const Route = createFileRoute("/auto")({
   head: () => ({
     meta: [
       {
-        title:
-          "Auto Insurance Springfield IL | Compare Car Insurance Rates | Kover King",
+        title: "Auto Insurance Coverage | Kover King",
       },
       {
         name: "description",
@@ -37,8 +37,7 @@ export const Route = createFileRoute("/auto")({
       },
       {
         property: "og:title",
-        content:
-          "Auto Insurance Springfield IL | Compare Car Insurance Rates | Kover King",
+        content: "Auto Insurance Coverage | Kover King",
       },
       {
         property: "og:description",
@@ -46,6 +45,7 @@ export const Route = createFileRoute("/auto")({
           "Compare car insurance rates from 30+ carriers in Springfield, IL. Average savings of $600/year. Liability, collision, comprehensive coverage.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/auto" }],
   }),
   component: AutoPage,
 });
@@ -213,13 +213,14 @@ function AutoPage() {
               Auto Insurance — Springfield, IL
             </div>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 text-text-primary">
-              Auto Insurance in{" "}
-              <span className="text-primary-500">Springfield, IL</span>
+              Auto Insurance Coverage Options
             </h1>
             <p className="text-xl text-text-secondary mb-8 leading-relaxed">
-              Compare car insurance rates from 30+ carriers in one place. Our
-              independent agents find you the right coverage at the best price —
-              no pressure, no runaround.
+              Auto insurance bundles liability, collision, comprehensive, and
+              uninsured-motorist protection to cover what you owe others, repair
+              your own vehicle, and shield you from drivers who carry no
+              coverage. We compare 30+ carriers so you get the right mix at the
+              best price.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <QuoteDialog defaultInsuranceType="Auto">
@@ -614,6 +615,16 @@ function AutoPage() {
         </div>
       </section>
 
+      {/* Cross-link to Springfield local page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Shopping for coverage in the capital city?{" "}
+            <Link to="/auto-insurance-springfield-il" className="text-primary-500 font-semibold hover:underline">See Springfield, IL auto insurance rates &amp; requirements</Link>.
+          </p>
+        </div>
+      </section>
+
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -632,6 +643,17 @@ function AutoPage() {
           </QuoteDialog>
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({ name: "Auto Insurance", description: "Auto insurance coverage — liability, collision, comprehensive, and uninsured-motorist protection — with quotes compared across 30+ carriers.", serviceType: "Auto insurance", path: "/auto", areaServed: "Central Illinois" }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Auto Insurance Coverage", path: "/auto" }]),
+          ),
+        }}
+      />
     </div>
   );
 }

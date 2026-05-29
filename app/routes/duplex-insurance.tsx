@@ -17,13 +17,13 @@ import {
   Wrench,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/duplex-insurance")({
   head: () => ({
     meta: [
       {
-        title:
-          "Duplex Insurance Springfield IL | Multi-Family Coverage | Kover King",
+        title: "Duplex Insurance Coverage | Kover King",
       },
       {
         name: "description",
@@ -32,8 +32,7 @@ export const Route = createFileRoute("/duplex-insurance")({
       },
       {
         property: "og:title",
-        content:
-          "Duplex Insurance Springfield IL | Multi-Family Coverage | Kover King",
+        content: "Duplex Insurance Coverage | Kover King",
       },
       {
         property: "og:description",
@@ -41,6 +40,7 @@ export const Route = createFileRoute("/duplex-insurance")({
           "Duplex and multi-family insurance in Springfield IL. Owner-occupied or investment — compare rates from 30+ carriers. Free quotes — call (217) 960-8997.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/duplex-insurance" }],
   }),
   component: DuplexInsurancePage,
 });
@@ -204,13 +204,14 @@ function DuplexInsurancePage() {
               Duplex Insurance — Springfield, IL
             </div>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 text-text-primary">
-              Duplex Insurance in{" "}
-              <span className="text-primary-500">Springfield, IL</span>
+              Duplex Insurance{" "}
+              <span className="text-primary-500">Coverage Options</span>
             </h1>
             <p className="text-xl text-text-secondary mb-8 leading-relaxed">
-              Owner-occupied or fully rented — insuring a duplex is more complex
-              than a standard home policy. We'll compare rates from 30+ carriers
-              and make sure you have the right coverage for your specific
+              Duplex and two-family property insurance covers the full structure,
+              your rental income, and your liability — whether you live in one
+              unit or rent both. A standard homeowners policy isn't built for
+              this exposure; we'll match you with the right policy type for your
               situation.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -546,6 +547,13 @@ function DuplexInsurancePage() {
         </div>
       </section>
 
+      {/* Cross-link to Springfield local page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">Own a duplex in the capital city?{" "}<Link to="/duplex-insurance-springfield" className="text-primary-500 font-semibold hover:underline">See Springfield, IL duplex insurance</Link>.</p>
+        </div>
+      </section>
+
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -573,6 +581,27 @@ function DuplexInsurancePage() {
           </div>
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Duplex Insurance",
+              description:
+                "Duplex and two-family property insurance — coverage for owner-occupied or fully-rented multi-unit homes, including dwelling and liability protection.",
+              serviceType: "Duplex insurance",
+              path: "/duplex-insurance",
+              areaServed: "Central Illinois",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Duplex Insurance Coverage", path: "/duplex-insurance" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

@@ -87,9 +87,13 @@ export function Footer() {
                 <Mail className="w-4 h-4 text-primary-500 shrink-0" />
                 info@koverking.com
               </a>
-              <div className="flex items-center gap-3">
-                <MapPin className="w-4 h-4 text-primary-500 shrink-0" />
-                Springfield, IL 62701
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
+                <span>
+                  [STREET ADDRESS]
+                  <br />
+                  Springfield, IL 62701
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-primary-500 shrink-0" />
@@ -246,6 +250,7 @@ export function Footer() {
             url: "https://koverking.com",
             address: {
               "@type": "PostalAddress",
+              streetAddress: "[STREET ADDRESS]",
               addressLocality: "Springfield",
               addressRegion: "IL",
               postalCode: "62701",

@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 import { useState } from "react";
 import {
   Home,
@@ -24,8 +25,7 @@ export const Route = createFileRoute("/home-insurance-springfield-il")({
   head: () => ({
     meta: [
       {
-        title:
-          "Home Insurance Springfield IL | Compare Homeowners Rates | Kover King",
+        title: "Home Insurance in Springfield, IL | Kover King",
       },
       {
         name: "description",
@@ -34,8 +34,7 @@ export const Route = createFileRoute("/home-insurance-springfield-il")({
       },
       {
         property: "og:title",
-        content:
-          "Home Insurance Springfield IL | Compare Homeowners Rates | Kover King",
+        content: "Home Insurance in Springfield, IL | Kover King",
       },
       {
         property: "og:description",
@@ -46,6 +45,12 @@ export const Route = createFileRoute("/home-insurance-springfield-il")({
         name: "keywords",
         content:
           "home insurance Springfield IL, homeowners insurance Springfield Illinois, Springfield IL home insurance quotes, cheap home insurance Springfield, Springfield homeowners insurance rates, Sangamon County home insurance, Springfield IL dwelling coverage",
+      },
+    ],
+    links: [
+      {
+        rel: "canonical",
+        href: "https://koverking.com/home-insurance-springfield-il",
       },
     ],
   }),
@@ -714,6 +719,9 @@ function HomeInsuranceSpringfieldILPage() {
         </div>
       </section>
 
+      {/* Cross-link to product coverage page */}
+      <section className="bg-surface py-10"><div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center"><p className="text-text-secondary">Want the full coverage breakdown?{" "}<Link to="/home-insurance" className="text-primary-500 font-semibold hover:underline">Explore our home insurance coverage options</Link>.</p></div></section>
+
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -742,6 +750,29 @@ function HomeInsuranceSpringfieldILPage() {
           </div>
         </div>
       </section>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Home Insurance in Springfield, IL",
+              description:
+                "Local homeowners insurance for Springfield, IL — local risk factors, discounts, and quotes from 30+ carriers.",
+              serviceType: "Home insurance",
+              path: "/home-insurance-springfield-il",
+              areaServed: "Springfield, IL",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              {
+                name: "Home Insurance in Springfield, IL",
+                path: "/home-insurance-springfield-il",
+              },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

@@ -19,13 +19,13 @@ import {
   Users,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/landlord-insurance-springfield")({
   head: () => ({
     meta: [
       {
-        title:
-          "Landlord Insurance Springfield IL | Rental Property Coverage | Kover King",
+        title: "Landlord Insurance in Springfield, IL | Kover King",
       },
       {
         name: "description",
@@ -34,8 +34,7 @@ export const Route = createFileRoute("/landlord-insurance-springfield")({
       },
       {
         property: "og:title",
-        content:
-          "Landlord Insurance Springfield IL | Rental Property Coverage | Kover King",
+        content: "Landlord Insurance in Springfield, IL | Kover King",
       },
       {
         property: "og:description",
@@ -48,6 +47,7 @@ export const Route = createFileRoute("/landlord-insurance-springfield")({
           "landlord insurance Springfield IL, rental property insurance Springfield, dwelling fire insurance Springfield Illinois, investment property insurance Springfield, rental income protection Illinois",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/landlord-insurance-springfield" }],
   }),
   component: LandlordInsuranceSpringfieldPage,
 });
@@ -585,6 +585,40 @@ function LandlordInsuranceSpringfieldPage() {
           </div>
         </div>
       </section>
+
+      {/* Cross-link to product coverage page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Want the full coverage breakdown?{" "}
+            <Link to="/landlord-insurance" className="text-primary-500 font-semibold hover:underline">
+              Explore our landlord insurance coverage options
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Landlord Insurance in Springfield, IL",
+              description:
+                "Local landlord insurance for Springfield, IL rental property owners — dwelling, liability, and lost-rent coverage.",
+              serviceType: "Landlord insurance",
+              path: "/landlord-insurance-springfield",
+              areaServed: "Springfield, IL",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Landlord Insurance in Springfield, IL", path: "/landlord-insurance-springfield" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

@@ -11,6 +11,9 @@ export const Route = createFileRoute("/privacy-policy")({
           "Privacy Policy for Kover King Insurance — how we collect, use, and protect your personal information.",
       },
     ],
+    links: [
+      { rel: "canonical", href: "https://koverking.com/privacy-policy" },
+    ],
   }),
   component: PrivacyPolicyPage,
 });

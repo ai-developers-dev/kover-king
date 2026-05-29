@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 import { useState } from "react";
 import {
   Heart,
@@ -21,8 +22,7 @@ export const Route = createFileRoute("/life-insurance-springfield-il")({
   head: () => ({
     meta: [
       {
-        title:
-          "Life Insurance Springfield IL | Term & Whole Life Quotes | Kover King",
+        title: "Life Insurance in Springfield, IL | Kover King",
       },
       {
         name: "description",
@@ -31,8 +31,7 @@ export const Route = createFileRoute("/life-insurance-springfield-il")({
       },
       {
         property: "og:title",
-        content:
-          "Life Insurance Springfield IL | Term & Whole Life Quotes | Kover King",
+        content: "Life Insurance in Springfield, IL | Kover King",
       },
       {
         property: "og:description",
@@ -45,6 +44,7 @@ export const Route = createFileRoute("/life-insurance-springfield-il")({
           "life insurance Springfield IL, term life insurance Springfield Illinois, whole life insurance Springfield, final expense insurance Springfield IL, life insurance quotes Springfield",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/life-insurance-springfield-il" }],
   }),
   component: LifeSpringfieldPage,
 });
@@ -696,6 +696,40 @@ function LifeSpringfieldPage() {
           </div>
         </div>
       </section>
+
+      {/* Cross-link to product page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Want the full coverage breakdown?{" "}
+            <Link to="/life" className="text-primary-500 font-semibold hover:underline">
+              Explore our life insurance coverage options
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Life Insurance in Springfield, IL",
+              description:
+                "Local life insurance for Springfield, IL families — term and whole life options with personalized guidance.",
+              serviceType: "Life insurance",
+              path: "/life-insurance-springfield-il",
+              areaServed: "Springfield, IL",
+            }),
+            faqPageSchema(faqs),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Life Insurance in Springfield, IL", path: "/life-insurance-springfield-il" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

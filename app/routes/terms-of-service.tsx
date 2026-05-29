@@ -11,6 +11,9 @@ export const Route = createFileRoute("/terms-of-service")({
           "Terms of Service for Kover King Insurance — terms governing the use of our website and insurance agency services.",
       },
     ],
+    links: [
+      { rel: "canonical", href: "https://koverking.com/terms-of-service" },
+    ],
   }),
   component: TermsOfServicePage,
 });

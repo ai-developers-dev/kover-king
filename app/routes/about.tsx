@@ -17,7 +17,7 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       {
-        title: "About Kover King Insurance | Springfield IL Insurance Agency",
+        title: "About Kover King Insurance | Springfield, IL Agency",
       },
       {
         name: "description",
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/about")({
           "Learn about Kover King Insurance — Springfield's trusted independent agency with over 30 years of experience serving Central Illinois.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/about" }],
   }),
   component: AboutPage,
 });

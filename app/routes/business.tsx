@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 import {
   Briefcase,
   Building2,
@@ -23,8 +24,7 @@ export const Route = createFileRoute("/business")({
   head: () => ({
     meta: [
       {
-        title:
-          "Business Insurance Springfield IL | Commercial Insurance | Kover King",
+        title: "Business Insurance Coverage | Kover King",
       },
       {
         name: "description",
@@ -33,8 +33,7 @@ export const Route = createFileRoute("/business")({
       },
       {
         property: "og:title",
-        content:
-          "Business Insurance Springfield IL | Commercial Insurance | Kover King",
+        content: "Business Insurance Coverage | Kover King",
       },
       {
         property: "og:description",
@@ -42,6 +41,7 @@ export const Route = createFileRoute("/business")({
           "Commercial insurance for Springfield businesses. General liability, commercial property, workers' compensation, business auto.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/business" }],
   }),
   component: BusinessPage,
 });
@@ -225,16 +225,19 @@ function BusinessPage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-cream text-primary-500 text-sm font-medium px-4 py-2 rounded-full mb-6">
               <Briefcase className="w-4 h-4" />
-              Business Insurance — Springfield, IL
+              Commercial Insurance Coverage
             </div>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 text-text-primary">
-              Business Insurance in{" "}
-              <span className="text-primary-500">Springfield, IL</span>
+              Business Insurance{" "}
+              <span className="text-primary-500">Coverage Options</span>
             </h1>
             <p className="text-xl text-text-secondary mb-8 leading-relaxed">
-              Protecting Springfield businesses is what we do. From a solo
-              contractor to a growing company with employees, we'll find
-              commercial coverage that fits your operation and budget.
+              Commercial insurance protects businesses of every size from the
+              risks they face every day — general liability, commercial property,
+              workers' compensation, and business owners policies (BOP) are the
+              core coverages most businesses need. Whether you're a sole
+              proprietor or a growing company with employees, we'll find a
+              policy package that fits your operation and budget.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <QuoteDialog defaultInsuranceType="Business">
@@ -628,6 +631,40 @@ function BusinessPage() {
           </div>
         </div>
       </section>
+
+      {/* Cross-link to Springfield local page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Run a business in the capital city?{" "}
+            <Link to="/business-insurance-springfield-il" className="text-primary-500 font-semibold hover:underline">
+              See Springfield, IL business insurance
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Business Insurance",
+              description:
+                "Commercial insurance coverage — general liability, commercial property, workers compensation, and business owners policies — compared across 30+ carriers.",
+              serviceType: "Business insurance",
+              path: "/business",
+              areaServed: "Central Illinois",
+            }),
+            faqPageSchema(faqItems),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Business Insurance Coverage", path: "/business" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }

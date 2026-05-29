@@ -16,30 +16,30 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/life")({
   head: () => ({
     meta: [
       {
-        title:
-          "Life Insurance Springfield IL | Term & Whole Life Quotes | Kover King",
+        title: "Life Insurance Coverage | Kover King",
       },
       {
         name: "description",
         content:
-          "Term life, whole life, and universal life insurance in Springfield, IL. Protect your family's financial future.",
+          "Term life, whole life, and universal life insurance coverage options. Protect your family's financial future — compare plans from 30+ A-rated carriers.",
       },
       {
         property: "og:title",
-        content:
-          "Life Insurance Springfield IL | Term & Whole Life Quotes | Kover King",
+        content: "Life Insurance Coverage | Kover King",
       },
       {
         property: "og:description",
         content:
-          "Term life, whole life, and universal life insurance in Springfield, IL. Protect your family's financial future.",
+          "Term life, whole life, and universal life insurance coverage options. Protect your family's financial future — compare plans from 30+ A-rated carriers.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://koverking.com/life" }],
   }),
   component: LifePage,
 });
@@ -224,17 +224,17 @@ function LifePage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-cream text-primary-500 text-sm font-medium px-4 py-2 rounded-full mb-6">
               <Heart className="w-4 h-4" />
-              Life Insurance — Springfield, IL
+              Life Insurance Coverage
             </div>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 text-text-primary">
-              Life Insurance in{" "}
-              <span className="text-primary-500">Springfield, IL</span>
+              Life Insurance{" "}
+              <span className="text-primary-500">Coverage Options</span>
             </h1>
             <p className="text-xl text-text-secondary mb-8 leading-relaxed">
-              Protect your family's financial future with the right life
-              insurance policy. We'll compare term, whole, and universal life
-              options from 30+ carriers to find the coverage that fits your
-              life.
+              Term life provides affordable protection for a set period — whole
+              life builds guaranteed cash value for a lifetime. We compare both,
+              plus universal life, from 30+ carriers to match the right policy
+              to your family's needs and budget.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <QuoteDialog defaultInsuranceType="Life">
@@ -732,6 +732,40 @@ function LifePage() {
           </QuoteDialog>
         </div>
       </section>
+
+      {/* Cross-link to local page */}
+      <section className="bg-surface py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-text-secondary">
+            Looking for a local agent in the capital city?{" "}
+            <Link to="/life-insurance-springfield-il" className="text-primary-500 font-semibold hover:underline">
+              See Springfield, IL life insurance
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(
+            serviceSchema({
+              name: "Life Insurance",
+              description:
+                "Life insurance coverage — term and whole life options to protect your family's financial future — compared across multiple carriers.",
+              serviceType: "Life insurance",
+              path: "/life",
+              areaServed: "Central Illinois",
+            }),
+            faqPageSchema(faqs),
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Life Insurance Coverage", path: "/life" },
+            ]),
+          ),
+        }}
+      />
     </div>
   );
 }
