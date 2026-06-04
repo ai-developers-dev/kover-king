@@ -48,6 +48,12 @@ export async function initDb() {
     for (const col of [
       "ALTER TABLE blog_posts ADD COLUMN author_id INTEGER",
       "ALTER TABLE blog_posts ADD COLUMN author_photo_url TEXT",
+      // SEO fields: focus + long-tail keywords, research citations (JSON
+      // array of {title,url}), and an optional manual related page.
+      "ALTER TABLE blog_posts ADD COLUMN keywords TEXT",
+      "ALTER TABLE blog_posts ADD COLUMN focus_keyword TEXT",
+      "ALTER TABLE blog_posts ADD COLUMN citations TEXT",
+      "ALTER TABLE blog_posts ADD COLUMN related_page TEXT",
     ]) {
       try {
         await db.execute(col);

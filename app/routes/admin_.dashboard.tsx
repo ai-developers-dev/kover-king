@@ -47,6 +47,36 @@ function getToken(): string {
   return sessionStorage.getItem("admin-token") || "";
 }
 
+// Sources are edited as "Title | https://url" lines and stored as JSON.
+function citationsToText(raw: unknown): string {
+  if (!raw) return "";
+  try {
+    const arr = JSON.parse(String(raw));
+    if (!Array.isArray(arr)) return "";
+    return arr
+      .filter((c) => c && c.url)
+      .map((c) => `${c.title || c.url} | ${c.url}`)
+      .join("\n");
+  } catch {
+    return "";
+  }
+}
+
+function textToCitations(text: string): { title: string; url: string }[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const idx = line.lastIndexOf("|");
+      if (idx === -1) return { title: line, url: line };
+      const title = line.slice(0, idx).trim();
+      const url = line.slice(idx + 1).trim();
+      return { title: title || url, url };
+    })
+    .filter((c) => /^https?:\/\//i.test(c.url));
+}
+
 type BlogFormState = {
   originalSlug: string | null; // null = creating a new post
   subject: string; // research topic for AI generation (not stored)
@@ -60,6 +90,10 @@ type BlogFormState = {
   datePublished: string;
   published: boolean;
   body: string;
+  focusKeyword: string;
+  keywords: string;
+  // Sources as "Title | https://url" lines, one per line.
+  sourcesText: string;
 };
 
 function emptyBlogForm(): BlogFormState {
@@ -76,6 +110,9 @@ function emptyBlogForm(): BlogFormState {
     datePublished: today,
     published: true,
     body: "",
+    focusKeyword: "",
+    keywords: "",
+    sourcesText: "",
   };
 }
 
@@ -228,6 +265,9 @@ function DashboardPage() {
       datePublished: String(p.date_published),
       published: Number(p.published) === 1,
       body: String(p.body ?? ""),
+      focusKeyword: p.focus_keyword ? String(p.focus_keyword) : "",
+      keywords: p.keywords ? String(p.keywords) : "",
+      sourcesText: citationsToText(p.citations),
     });
   };
 
@@ -263,6 +303,12 @@ function DashboardPage() {
         title: result.title,
         description: result.description,
         body: result.body,
+        focusKeyword: result.focusKeyword || "",
+        keywords: result.keywords || "",
+        category: result.category || blogForm.category,
+        sourcesText: (result.citations || [])
+          .map((c) => `${c.title} | ${c.url}`)
+          .join("\n"),
         ...(slugTouched ? {} : { slug: slugify(result.title) }),
       });
     } catch {
@@ -303,6 +349,9 @@ function DashboardPage() {
       body: blogForm.body,
       published: blogForm.published,
       datePublished: blogForm.datePublished,
+      focusKeyword: blogForm.focusKeyword.trim() || undefined,
+      keywords: blogForm.keywords.trim() || undefined,
+      citations: textToCitations(blogForm.sourcesText),
     };
     try {
       const result = blogForm.originalSlug
@@ -1125,7 +1174,63 @@ function BlogPanel({
               <strong className="text-text-secondary">Formatting:</strong> Blank
               line = new paragraph &nbsp;·&nbsp; <code>## </code> at the start of
               a line = section heading &nbsp;·&nbsp; <code>- </code> at the start
-              of a line = bullet point.
+              of a line = bullet point &nbsp;·&nbsp; <code>[text](/home-insurance)</code>{" "}
+              = link.
+            </div>
+          </div>
+
+          {/* SEO fields (auto-filled by Generate, fully editable) */}
+          <div className="rounded-xl border border-gray-100 bg-surface/60 p-4 space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              SEO
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                  Focus keyword
+                </label>
+                <input
+                  type="text"
+                  value={form.focusKeyword}
+                  onChange={(e) => updateForm({ focusKeyword: e.target.value })}
+                  placeholder="home insurance Springfield IL"
+                  className={fieldClass}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                  Keywords{" "}
+                  <span className="text-text-muted font-normal">
+                    (comma-separated)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={form.keywords}
+                  onChange={(e) => updateForm({ keywords: e.target.value })}
+                  placeholder="home insurance, homeowners coverage, flood insurance"
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                Sources{" "}
+                <span className="text-text-muted font-normal">
+                  (one per line: Title | https://url)
+                </span>
+              </label>
+              <textarea
+                value={form.sourcesText}
+                onChange={(e) => updateForm({ sourcesText: e.target.value })}
+                rows={3}
+                placeholder="Illinois DOI | https://idoi.illinois.gov/"
+                className={`${fieldClass} resize-y font-mono text-xs leading-relaxed`}
+              />
+              <p className="text-xs text-text-muted mt-1.5">
+                Shown as a “Sources” list at the bottom of the post (external,
+                nofollow links).
+              </p>
             </div>
           </div>
 

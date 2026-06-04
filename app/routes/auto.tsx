@@ -23,6 +23,7 @@ import {
   Tag,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { RelatedArticles } from "~/components/related-articles";
 
 export const Route = createFileRoute("/auto")({
   head: () => ({
@@ -624,6 +625,8 @@ function AutoPage() {
           </p>
         </div>
       </section>
+
+      <RelatedArticles category="Auto Insurance" />
 
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">

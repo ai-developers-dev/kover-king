@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { RelatedArticles } from "~/components/related-articles";
 import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/landlord-insurance")({
@@ -491,6 +492,8 @@ function LandlordInsurancePage() {
           </div>
         </div>
       </section>
+
+      <RelatedArticles category="Landlord Insurance" />
 
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">

@@ -15,6 +15,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { RelatedArticles } from "~/components/related-articles";
 import { jsonLd, serviceSchema, faqPageSchema, breadcrumbSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/home-insurance")({
@@ -646,6 +647,8 @@ function HomeInsurancePage() {
 
       {/* Cross-link to local Springfield page */}
       <section className="bg-surface py-10"><div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center"><p className="text-text-secondary">Shopping for a policy in the capital city?{" "}<Link to="/home-insurance-springfield-il" className="text-primary-500 font-semibold hover:underline">See Springfield, IL home insurance rates &amp; local risks</Link>.</p></div></section>
+
+      <RelatedArticles category="Home Insurance" />
 
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">

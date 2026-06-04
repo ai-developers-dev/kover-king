@@ -11,6 +11,46 @@ export function canonical(path: string): string {
   return `${SITE_URL}${path}`;
 }
 
+// Single source of truth for blog internal-linking and "Related Articles".
+// `label` is the phrase the AI may turn into a [label](path) internal link;
+// `category` ties posts to the service/location pages they belong on.
+export const BLOG_CATEGORIES = [
+  "Auto Insurance",
+  "Home Insurance",
+  "Business Insurance",
+  "Life Insurance",
+  "Landlord Insurance",
+  "Duplex Insurance",
+] as const;
+export type BlogCategory = (typeof BLOG_CATEGORIES)[number];
+
+// Pages the AI is allowed to link to from inside a post body, and that show a
+// "Related Articles" block for their category.
+export const SITE_PAGES: {
+  label: string;
+  path: string;
+  category: BlogCategory | null;
+}[] = [
+  { label: "auto insurance", path: "/auto", category: "Auto Insurance" },
+  { label: "auto insurance in Springfield, IL", path: "/auto-insurance-springfield-il", category: "Auto Insurance" },
+  { label: "home insurance", path: "/home-insurance", category: "Home Insurance" },
+  { label: "home insurance in Springfield, IL", path: "/home-insurance-springfield-il", category: "Home Insurance" },
+  { label: "business insurance", path: "/business", category: "Business Insurance" },
+  { label: "business insurance in Springfield, IL", path: "/business-insurance-springfield-il", category: "Business Insurance" },
+  { label: "life insurance", path: "/life", category: "Life Insurance" },
+  { label: "life insurance in Springfield, IL", path: "/life-insurance-springfield-il", category: "Life Insurance" },
+  { label: "landlord insurance", path: "/landlord-insurance", category: "Landlord Insurance" },
+  { label: "landlord insurance in Springfield", path: "/landlord-insurance-springfield", category: "Landlord Insurance" },
+  { label: "duplex insurance", path: "/duplex-insurance", category: "Duplex Insurance" },
+  { label: "duplex insurance in Springfield", path: "/duplex-insurance-springfield", category: "Duplex Insurance" },
+  { label: "contact us", path: "/contact", category: null },
+];
+
+/** Pages that belong to a category (for the page-side "Related Articles"). */
+export function pagesForCategory(category: string): string[] {
+  return SITE_PAGES.filter((p) => p.category === category).map((p) => p.path);
+}
+
 // Name / Address / Phone. The street address is a placeholder — fill in the
 // real street from the Google Business Profile. ZIP and city already match
 // what the site displays; do NOT invent a different address.
@@ -102,6 +142,8 @@ export function articleSchema(opts: {
   dateModified?: string;
   author?: string | null;
   authorPhotoUrl?: string | null;
+  keywords?: string | null;
+  image?: string | null;
 }) {
   // An individual byline is a Person; fall back to the agency (Organization).
   const author = opts.author
@@ -113,7 +155,7 @@ export function articleSchema(opts: {
     : { "@type": "Organization", name: NAP.name };
   return {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "BlogPosting",
     headline: opts.headline,
     description: opts.description,
     datePublished: opts.datePublished,
@@ -124,6 +166,8 @@ export function articleSchema(opts: {
       name: NAP.name,
       url: SITE_URL,
     },
+    ...(opts.keywords ? { keywords: opts.keywords } : {}),
+    ...(opts.image ? { image: opts.image } : {}),
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical(opts.path) },
     url: canonical(opts.path),
   };

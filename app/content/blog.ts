@@ -10,6 +10,48 @@ export type BlogBlock =
   | { type: "paragraph"; text: string }
   | { type: "list"; items: string[] };
 
+// Inline tokens within a line of body text. Supports Markdown-style links
+// [label](href) and bold **text**; everything else is plain text. The renderer
+// (in the .tsx) turns links into <Link> (internal /paths) or external <a> tags
+// and bold into <strong>.
+export type InlineToken =
+  | { type: "text"; value: string }
+  | { type: "bold"; value: string }
+  | { type: "link"; label: string; href: string };
+
+/**
+ * Split a line into plain-text, **bold**, and [label](href) link tokens.
+ * Only http(s) and root-relative (/path) hrefs are treated as links; anything
+ * else is left as literal text so stray brackets never produce bad links.
+ */
+export function parseInline(text: string): InlineToken[] {
+  const tokens: InlineToken[] = [];
+  // Match a link [label](href) OR bold **text**, whichever comes first.
+  const re = /\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const full = m[0];
+    // Links: m[1]=label, m[2]=href. Bold: m[3]=text.
+    if (m[2] !== undefined) {
+      const href = m[2];
+      const isValid = href.startsWith("/") || /^https?:\/\//i.test(href);
+      if (!isValid) continue;
+      if (m.index > last) tokens.push({ type: "text", value: text.slice(last, m.index) });
+      tokens.push({ type: "link", label: m[1], href });
+      last = m.index + full.length;
+    } else if (m[3] !== undefined) {
+      if (m.index > last) tokens.push({ type: "text", value: text.slice(last, m.index) });
+      tokens.push({ type: "bold", value: m[3] });
+      last = m.index + full.length;
+    }
+  }
+  if (last < text.length) {
+    tokens.push({ type: "text", value: text.slice(last) });
+  }
+  return tokens.length ? tokens : [{ type: "text", value: text }];
+}
+
 // Shape returned to the UI. `body` is the raw text the admin typed; call
 // parseBody(body) to get renderable blocks.
 export type BlogPost = {

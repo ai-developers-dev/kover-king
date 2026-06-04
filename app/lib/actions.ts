@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db, initDb } from "~/lib/db";
+import { SITE_PAGES, BLOG_CATEGORIES } from "~/lib/seo";
+
+type Citation = { title: string; url: string };
 
 // ─── Admin session helpers ───────────────────────────────────────────────────
 // Sessions are random tokens stored server-side in `admin_sessions`. Every
@@ -160,13 +163,29 @@ export const getPublishedPosts = createServerFn({ method: "GET" })
     return result.rows;
   });
 
+// Posts whose category matches one shown on a given service/location page.
+// Powers the "Related Articles" block. Public (GET), no auth.
+export const getRelatedPosts = createServerFn({ method: "GET" })
+  .inputValidator((data: { category: string; limit?: number }) => data)
+  // @ts-ignore - TanStack Start SSR register type mismatch
+  .handler(async ({ data }) => {
+    await initDb();
+    if (!data.category) return [];
+    const limit = data.limit && data.limit > 0 ? Math.min(data.limit, 6) : 3;
+    const result = await db.execute({
+      sql: "SELECT slug, title, description, category, author, author_photo_url, read_minutes, date_published FROM blog_posts WHERE published = 1 AND category = ? ORDER BY date_published DESC, id DESC LIMIT ?",
+      args: [data.category, limit],
+    });
+    return result.rows;
+  });
+
 export const getPublishedPost = createServerFn({ method: "GET" })
   .inputValidator((data: { slug: string }) => data)
   // @ts-ignore - TanStack Start SSR register type mismatch
   .handler(async ({ data }) => {
     await initDb();
     const result = await db.execute({
-      sql: "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published FROM blog_posts WHERE slug = ? AND published = 1 LIMIT 1",
+      sql: "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations FROM blog_posts WHERE slug = ? AND published = 1 LIMIT 1",
       args: [data.slug],
     });
     return result.rows[0] ?? null;
@@ -188,6 +207,9 @@ type BlogInput = {
   body: string;
   published: boolean;
   datePublished: string;
+  keywords?: string;
+  focusKeyword?: string;
+  citations?: Citation[];
 };
 
 // Resolve the author selection into a { name, photoUrl, id } snapshot stored
@@ -246,7 +268,7 @@ export const getBlogPostsAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertSession(data.token);
     const result = await db.execute(
-      "SELECT id, slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, date_published, published FROM blog_posts ORDER BY date_published DESC, id DESC"
+      "SELECT id, slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations FROM blog_posts ORDER BY date_published DESC, id DESC"
     );
     return result.rows;
   });
@@ -267,7 +289,7 @@ export const createBlogPost = createServerFn({ method: "POST" })
     }
     const a = await resolveAuthor(data.authorId, data.author);
     await db.execute({
-      sql: "INSERT INTO blog_posts (slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, published, date_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      sql: "INSERT INTO blog_posts (slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, published, date_published, keywords, focus_keyword, citations) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         data.slug,
         data.title,
@@ -280,6 +302,11 @@ export const createBlogPost = createServerFn({ method: "POST" })
         data.body,
         data.published ? 1 : 0,
         data.datePublished,
+        data.keywords?.trim() || null,
+        data.focusKeyword?.trim() || null,
+        data.citations && data.citations.length
+          ? JSON.stringify(data.citations)
+          : null,
       ],
     });
     return { success: true as const };
@@ -303,7 +330,7 @@ export const updateBlogPost = createServerFn({ method: "POST" })
     }
     const a = await resolveAuthor(data.authorId, data.author);
     await db.execute({
-      sql: "UPDATE blog_posts SET slug = ?, title = ?, description = ?, category = ?, author = ?, author_id = ?, author_photo_url = ?, read_minutes = ?, body = ?, published = ?, date_published = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+      sql: "UPDATE blog_posts SET slug = ?, title = ?, description = ?, category = ?, author = ?, author_id = ?, author_photo_url = ?, read_minutes = ?, body = ?, published = ?, date_published = ?, keywords = ?, focus_keyword = ?, citations = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
       args: [
         data.slug,
         data.title,
@@ -316,6 +343,11 @@ export const updateBlogPost = createServerFn({ method: "POST" })
         data.body,
         data.published ? 1 : 0,
         data.datePublished,
+        data.keywords?.trim() || null,
+        data.focusKeyword?.trim() || null,
+        data.citations && data.citations.length
+          ? JSON.stringify(data.citations)
+          : null,
         data.originalSlug,
       ],
     });
@@ -461,9 +493,11 @@ export const uploadAuthorPhoto = createServerFn({ method: "POST" })
 // Pull a compact "what the web says" context for the subject. Best-effort: if
 // the key is missing or the call fails, return "" and let the model write from
 // its own knowledge rather than hard-failing the whole request.
-async function researchSubject(subject: string): Promise<string> {
+async function researchSubject(
+  subject: string
+): Promise<{ context: string; citations: Citation[] }> {
   const key = process.env.TAVILY_API_KEY;
-  if (!key) return "";
+  if (!key) return { context: "", citations: [] };
   try {
     const res = await fetch("https://api.tavily.com/search", {
       method: "POST",
@@ -476,22 +510,37 @@ async function researchSubject(subject: string): Promise<string> {
         include_answer: true,
       }),
     });
-    if (!res.ok) return "";
+    if (!res.ok) return { context: "", citations: [] };
     const json = (await res.json()) as {
       answer?: string;
       results?: { title?: string; url?: string; content?: string }[];
     };
     const parts: string[] = [];
     if (json.answer) parts.push(`Summary: ${json.answer}`);
+    const citations: Citation[] = [];
+    const seenDomains = new Set<string>();
     for (const r of json.results ?? []) {
       if (r.content) {
         parts.push(`Source (${r.title ?? r.url ?? "web"}): ${r.content}`);
       }
+      // Collect citations, one per domain, capped at 5.
+      if (r.url && citations.length < 5) {
+        let domain = r.url;
+        try {
+          domain = new URL(r.url).hostname.replace(/^www\./, "");
+        } catch {
+          /* keep raw url as the dedup key */
+        }
+        if (!seenDomains.has(domain)) {
+          seenDomains.add(domain);
+          citations.push({ title: r.title?.trim() || domain, url: r.url });
+        }
+      }
     }
-    // Cap length to keep token usage and latency down.
-    return parts.join("\n\n").slice(0, 6000);
+    // Cap context length to keep token usage and latency down.
+    return { context: parts.join("\n\n").slice(0, 6000), citations };
   } catch {
-    return "";
+    return { context: "", citations: [] };
   }
 }
 
@@ -501,7 +550,16 @@ export const generateBlogPost = createServerFn({ method: "POST" })
     async ({
       data,
     }): Promise<
-      | { success: true; title: string; description: string; body: string }
+      | {
+          success: true;
+          title: string;
+          description: string;
+          body: string;
+          keywords: string;
+          focusKeyword: string;
+          category: string;
+          citations: Citation[];
+        }
       | { success: false; error: string }
     > => {
       await assertSession(data.token);
@@ -520,7 +578,10 @@ export const generateBlogPost = createServerFn({ method: "POST" })
         };
       }
 
-      const research = await researchSubject(subject);
+      const { context: research, citations } = await researchSubject(subject);
+
+      // Allowed internal links — the model may ONLY link to these paths.
+      const linkList = SITE_PAGES.map((p) => `- "${p.label}" -> ${p.path}`).join("\n");
 
       const systemPrompt = [
         "You are a content writer for Kover King Insurance, an independent insurance agency in Springfield, IL.",
@@ -531,9 +592,19 @@ export const generateBlogPost = createServerFn({ method: "POST" })
         "- Separate paragraphs with a blank line.",
         '- A line starting with "## " is a section heading.',
         '- A line starting with "- " is a bullet point.',
-        "- Do NOT use Markdown bold, italics, links, images, or code. Plain text only with the rules above.",
+        "- You MAY use **bold** for emphasis on key terms. Do NOT use italics, images, or code.",
+        "INTERNAL LINKS (for SEO): Naturally weave in 2–4 internal links using the EXACT syntax [anchor text](/path). You may ONLY link to these pages — never invent other internal URLs, and do not link the same page more than once:",
+        linkList,
+        "REQUIRED: at least one internal link MUST point to the most relevant SERVICE page for this topic (e.g. a home-insurance article must include [home insurance](/home-insurance)). Do not rely only on /contact. Put links in body paragraphs, never in the title or headings. Do NOT add external links in the body — sources are handled separately.",
         "Do NOT invent statistics, dollar amounts, dates, or local facts unless they appear in the provided research. When unsure, keep claims general.",
-        "Return ONLY a JSON object with exactly these keys: title (string, <=60 chars, no brand suffix), description (string, 1-2 sentence summary), body (string, the article using the format rules above).",
+        `Choose the single best category from this list: ${BLOG_CATEGORIES.join(", ")}.`,
+        "Return ONLY a JSON object with exactly these keys:",
+        "- title (string, <=60 chars, no brand suffix)",
+        "- description (string, 1-2 sentence meta summary, <=160 chars)",
+        "- body (string, the article using the format rules above, including the internal links)",
+        "- focusKeyword (string, the single primary keyword phrase this post targets)",
+        "- keywords (string, 5-8 comma-separated keywords including long-tail variations)",
+        "- category (string, exactly one of the category list above)",
       ].join("\n");
 
       const userPrompt = research
@@ -546,14 +617,21 @@ export const generateBlogPost = createServerFn({ method: "POST" })
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           response_format: { type: "json_object" },
-          max_tokens: 2400,
+          max_tokens: 2600,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
         });
         const raw = completion.choices[0]?.message?.content ?? "";
-        let parsed: { title?: string; description?: string; body?: string };
+        let parsed: {
+          title?: string;
+          description?: string;
+          body?: string;
+          focusKeyword?: string;
+          keywords?: string;
+          category?: string;
+        };
         try {
           parsed = JSON.parse(raw);
         } catch {
@@ -568,11 +646,21 @@ export const generateBlogPost = createServerFn({ method: "POST" })
             error: "The AI response was incomplete. Please try again.",
           };
         }
+        // Constrain category to the known set; default to first if off-list.
+        const category =
+          parsed.category &&
+          (BLOG_CATEGORIES as readonly string[]).includes(parsed.category.trim())
+            ? parsed.category.trim()
+            : "";
         return {
           success: true,
           title: parsed.title.trim(),
           description: parsed.description.trim(),
           body: parsed.body.trim(),
+          keywords: (parsed.keywords ?? "").trim(),
+          focusKeyword: (parsed.focusKeyword ?? "").trim(),
+          category,
+          citations,
         };
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";

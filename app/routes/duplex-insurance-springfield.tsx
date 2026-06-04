@@ -20,6 +20,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { RelatedArticles } from "~/components/related-articles";
 
 export const Route = createFileRoute("/duplex-insurance-springfield")({
   head: () => ({
@@ -704,6 +705,8 @@ function DuplexInsuranceSpringfieldPage() {
           <p className="text-text-secondary">Want the full coverage breakdown?{" "}<Link to="/duplex-insurance" className="text-primary-500 font-semibold hover:underline">Explore our duplex insurance coverage options</Link>.</p>
         </div>
       </section>
+
+      <RelatedArticles category="Duplex Insurance" />
 
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">

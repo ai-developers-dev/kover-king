@@ -20,6 +20,7 @@ import {
   Snowflake,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { RelatedArticles } from "~/components/related-articles";
 
 export const Route = createFileRoute("/home-insurance-springfield-il")({
   head: () => ({
@@ -721,6 +722,8 @@ function HomeInsuranceSpringfieldILPage() {
 
       {/* Cross-link to product coverage page */}
       <section className="bg-surface py-10"><div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center"><p className="text-text-secondary">Want the full coverage breakdown?{" "}<Link to="/home-insurance" className="text-primary-500 font-semibold hover:underline">Explore our home insurance coverage options</Link>.</p></div></section>
+
+      <RelatedArticles category="Home Insurance" />
 
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">

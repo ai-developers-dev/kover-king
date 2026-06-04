@@ -1,8 +1,21 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, Clock, Phone } from "lucide-react";
-import { jsonLd, articleSchema, breadcrumbSchema, canonical } from "~/lib/seo";
-import { parseBody, formatPostDate, type BlogBlock } from "~/content/blog";
+import { ArrowLeft, Calendar, Clock, Phone, ExternalLink } from "lucide-react";
+import {
+  jsonLd,
+  articleSchema,
+  breadcrumbSchema,
+  canonical,
+  SITE_URL,
+} from "~/lib/seo";
+import {
+  parseBody,
+  parseInline,
+  formatPostDate,
+  type BlogBlock,
+} from "~/content/blog";
 import { getPublishedPost } from "~/lib/actions";
+
+type Citation = { title: string; url: string };
 
 type LoadedPost = {
   slug: string;
@@ -13,8 +26,12 @@ type LoadedPost = {
   authorPhotoUrl: string | null;
   readMinutes: number | null;
   datePublished: string;
+  keywords: string | null;
+  citations: Citation[];
   blocks: BlogBlock[];
 };
+
+const FALLBACK_OG_IMAGE = `${SITE_URL}/favicon.svg`;
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: async ({ params }): Promise<{ post: LoadedPost }> => {
@@ -22,6 +39,19 @@ export const Route = createFileRoute("/blog/$slug")({
       data: { slug: params.slug },
     })) as Record<string, unknown> | null;
     if (!row) throw notFound();
+    let citations: Citation[] = [];
+    if (row.citations) {
+      try {
+        const parsed = JSON.parse(String(row.citations));
+        if (Array.isArray(parsed)) {
+          citations = parsed.filter(
+            (c) => c && typeof c.url === "string" && typeof c.title === "string"
+          );
+        }
+      } catch {
+        citations = [];
+      }
+    }
     return {
       post: {
         slug: String(row.slug),
@@ -32,6 +62,8 @@ export const Route = createFileRoute("/blog/$slug")({
         authorPhotoUrl: row.author_photo_url ? String(row.author_photo_url) : null,
         readMinutes: row.read_minutes == null ? null : Number(row.read_minutes),
         datePublished: String(row.date_published),
+        keywords: row.keywords ? String(row.keywords) : null,
+        citations,
         blocks: parseBody(String(row.body ?? "")),
       },
     };
@@ -41,27 +73,85 @@ export const Route = createFileRoute("/blog/$slug")({
     if (!post) {
       return { meta: [{ title: "Article Not Found | Kover King" }] };
     }
+    const fullTitle = `${post.title} | Kover King`;
+    const url = canonical(`/blog/${post.slug}`);
+    const image = post.authorPhotoUrl || FALLBACK_OG_IMAGE;
     return {
       meta: [
-        { title: `${post.title} | Kover King` },
+        { title: fullTitle },
         { name: "description", content: post.description },
-        { property: "og:title", content: `${post.title} | Kover King` },
+        ...(post.keywords ? [{ name: "keywords", content: post.keywords }] : []),
+        // Open Graph (article)
+        { property: "og:title", content: fullTitle },
         { property: "og:description", content: post.description },
         { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+        { property: "og:image", content: image },
+        { property: "article:published_time", content: post.datePublished },
+        ...(post.author
+          ? [{ property: "article:author", content: post.author }]
+          : []),
+        ...(post.category
+          ? [{ property: "article:section", content: post.category }]
+          : []),
+        // Twitter card
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: fullTitle },
+        { name: "twitter:description", content: post.description },
+        { name: "twitter:image", content: image },
       ],
-      links: [
-        { rel: "canonical", href: canonical(`/blog/${post.slug}`) },
-      ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
   component: BlogPostPage,
 });
 
+// Render a line of body text with inline [label](href) links. Internal links
+// (/path) use the SPA router; external links open in a new tab and are
+// nofollow so we don't pass ranking signal to third parties.
+function Inline({ text }: { text: string }) {
+  return (
+    <>
+      {parseInline(text).map((tok, i) => {
+        if (tok.type === "text") return <span key={i}>{tok.value}</span>;
+        if (tok.type === "bold")
+          return (
+            <strong key={i} className="font-semibold text-text-primary">
+              {tok.value}
+            </strong>
+          );
+        if (tok.href.startsWith("/")) {
+          return (
+            <Link
+              key={i}
+              to={tok.href as "/"}
+              className="text-primary-500 font-medium underline underline-offset-2 hover:text-primary-600"
+            >
+              {tok.label}
+            </Link>
+          );
+        }
+        return (
+          <a
+            key={i}
+            href={tok.href}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            className="text-primary-500 font-medium underline underline-offset-2 hover:text-primary-600"
+          >
+            {tok.label}
+          </a>
+        );
+      })}
+    </>
+  );
+}
+
 function Block({ block }: { block: BlogBlock }) {
   if (block.type === "heading") {
     return (
       <h2 className="font-heading text-2xl font-bold text-text-primary mt-10 mb-3">
-        {block.text}
+        <Inline text={block.text} />
       </h2>
     );
   }
@@ -69,14 +159,16 @@ function Block({ block }: { block: BlogBlock }) {
     return (
       <ul className="my-4 space-y-2 list-disc pl-6 text-text-secondary leading-relaxed">
         {block.items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item}>
+            <Inline text={item} />
+          </li>
         ))}
       </ul>
     );
   }
   return (
     <p className="my-4 text-text-secondary leading-relaxed text-lg">
-      {block.text}
+      <Inline text={block.text} />
     </p>
   );
 }
@@ -143,6 +235,30 @@ function BlogPostPage() {
             {post.blocks.map((block, i) => (
               <Block key={i} block={block} />
             ))}
+
+            {/* Sources / citations from the research behind this article. */}
+            {post.citations.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-gray-100">
+                <h2 className="font-heading text-lg font-bold text-text-primary mb-4">
+                  Sources
+                </h2>
+                <ol className="space-y-2 list-decimal pl-6 text-sm text-text-secondary">
+                  {post.citations.map((c) => (
+                    <li key={c.url}>
+                      <a
+                        href={c.url}
+                        target="_blank"
+                        rel="nofollow noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-primary-500 hover:text-primary-600 underline underline-offset-2 break-words"
+                      >
+                        {c.title}
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
         </div>
       </article>
@@ -179,6 +295,8 @@ function BlogPostPage() {
               datePublished: post.datePublished,
               author: post.author,
               authorPhotoUrl: post.authorPhotoUrl,
+              keywords: post.keywords,
+              image: post.authorPhotoUrl || FALLBACK_OG_IMAGE,
             }),
             breadcrumbSchema([
               { name: "Home", path: "/" },

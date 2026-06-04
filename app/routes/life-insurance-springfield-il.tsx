@@ -17,6 +17,7 @@ import {
   Clock,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { RelatedArticles } from "~/components/related-articles";
 
 export const Route = createFileRoute("/life-insurance-springfield-il")({
   head: () => ({
@@ -667,6 +668,8 @@ function LifeSpringfieldPage() {
           </div>
         </div>
       </section>
+
+      <RelatedArticles category="Life Insurance" />
 
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">

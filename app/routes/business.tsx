@@ -19,6 +19,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { RelatedArticles } from "~/components/related-articles";
 
 export const Route = createFileRoute("/business")({
   head: () => ({
@@ -603,6 +604,8 @@ function BusinessPage() {
 
       {/* Business Insurance FAQ */}
       <BusinessFAQ />
+
+      <RelatedArticles category="Business Insurance" />
 
       {/* Bottom CTA Banner */}
       <section className="bg-primary-500 py-16">
