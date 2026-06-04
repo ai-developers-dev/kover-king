@@ -16,6 +16,9 @@ import {
   updateAuthor,
   deleteAuthor,
   uploadAuthorPhoto,
+  getKeywordIdeas,
+  updateKeywordIdeaStatus,
+  runKeywordIdeasNow,
 } from "~/lib/actions";
 import { slugify } from "~/content/blog";
 import {
@@ -40,6 +43,7 @@ import {
   Sparkles,
   Users,
   Upload,
+  Lightbulb,
 } from "lucide-react";
 
 function getToken(): string {
@@ -138,7 +142,7 @@ export const Route = createFileRoute("/admin_/dashboard")({
   component: DashboardPage,
 });
 
-type Tab = "quotes" | "contacts" | "blog" | "authors";
+type Tab = "quotes" | "contacts" | "blog" | "authors" | "ideas";
 
 const insuranceIcon: Record<string, typeof Car> = {
   Auto: Car,
@@ -170,6 +174,10 @@ function DashboardPage() {
   const [authorSaving, setAuthorSaving] = useState(false);
   const [authorUploading, setAuthorUploading] = useState(false);
   const [authorError, setAuthorError] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [ideas, setIdeas] = useState<any[]>([]);
+  const [ideasGenerating, setIdeasGenerating] = useState(false);
+  const [ideasMsg, setIdeasMsg] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -186,16 +194,18 @@ function DashboardPage() {
     setLoading(true);
     const token = getToken();
     try {
-      const [q, c, p, a] = await Promise.all([
+      const [q, c, p, a, ki] = await Promise.all([
         getQuotes({ data: { token } }),
         getContacts({ data: { token } }),
         getBlogPostsAdmin({ data: { token } }),
         getAuthorsAdmin({ data: { token } }),
+        getKeywordIdeas({ data: { token } }),
       ]);
       setQuotes(q as any[]);
       setContacts(c as any[]);
       setPosts(p as any[]);
       setAuthors(a as any[]);
+      setIdeas(ki as any[]);
     } catch {
       // A failure here usually means the session expired — send back to login.
       sessionStorage.removeItem("admin-token");
@@ -247,6 +257,45 @@ function DashboardPage() {
     setBlogError("");
     setSlugTouched(false);
     setBlogForm(emptyBlogForm());
+  };
+
+  // ── Keyword Ideas handlers ──
+  const handleGenerateIdeas = async () => {
+    setIdeasMsg("");
+    setIdeasGenerating(true);
+    try {
+      const res = await runKeywordIdeasNow({ data: { token: getToken() } });
+      if (res.success) {
+        setIdeasMsg(
+          `Generated ${res.count} ideas.` +
+            (res.emailed ? " Emailed to you." : ` (Email not sent: ${res.note || "not configured"})`)
+        );
+        await loadData();
+      } else {
+        setIdeasMsg(res.error || "Could not generate ideas.");
+      }
+    } catch {
+      setIdeasMsg("Could not generate ideas. Your session may have expired.");
+    }
+    setIdeasGenerating(false);
+  };
+
+  // Start a new blog post pre-seeded with an idea's keyword/title as the subject.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const usePostIdea = (idea: any) => {
+    setBlogError("");
+    setSlugTouched(false);
+    setBlogForm({ ...emptyBlogForm(), subject: String(idea.title || idea.keyword) });
+    setTab("blog");
+    if (idea.id) {
+      updateKeywordIdeaStatus({ data: { token: getToken(), id: Number(idea.id), status: "used" } }).catch(() => {});
+      setIdeas((prev) => prev.map((x) => (x.id === idea.id ? { ...x, status: "used" } : x)));
+    }
+  };
+
+  const dismissIdea = async (id: number) => {
+    setIdeas((prev) => prev.map((x) => (x.id === id ? { ...x, status: "dismissed" } : x)));
+    await updateKeywordIdeaStatus({ data: { token: getToken(), id, status: "dismissed" } }).catch(() => {});
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -621,6 +670,17 @@ function DashboardPage() {
             <Users className="w-4 h-4" />
             Authors ({authors.length})
           </button>
+          <button
+            onClick={() => setTab("ideas")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              tab === "ideas"
+                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <Lightbulb className="w-4 h-4" />
+            Keyword Ideas
+          </button>
         </div>
 
         {/* Content */}
@@ -661,6 +721,16 @@ function DashboardPage() {
             onSave={handleSaveAuthor}
             onPhotoFile={handleAuthorPhotoFile}
             updateForm={updateAuthorForm}
+          />
+        ) : tab === "ideas" ? (
+          <IdeasPanel
+            ideas={ideas}
+            generating={ideasGenerating}
+            message={ideasMsg}
+            onGenerate={handleGenerateIdeas}
+            onUse={usePostIdea}
+            onDismiss={dismissIdea}
+            formatDate={formatDate}
           />
         ) : tab === "quotes" ? (
           <div className="space-y-3">
@@ -1594,6 +1664,166 @@ function AuthorsPanel({
                 <Trash2 className="w-3.5 h-3.5" />
                 Delete
               </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Keyword Ideas panel ─────────────────────────────────────────────────────
+
+function IdeasPanel({
+  ideas,
+  generating,
+  message,
+  onGenerate,
+  onUse,
+  onDismiss,
+  formatDate,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ideas: any[];
+  generating: boolean;
+  message: string;
+  onGenerate: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onUse: (idea: any) => void;
+  onDismiss: (id: number) => void;
+  formatDate: (d: unknown) => string;
+}) {
+  // Group ideas by batch_date (newest first; rows already sorted by the query).
+  const batches: { date: string; items: any[] }[] = [];
+  for (const idea of ideas) {
+    const d = String(idea.batch_date);
+    let b = batches.find((x) => x.date === d);
+    if (!b) {
+      b = { date: d, items: [] };
+      batches.push(b);
+    }
+    b.items.push(idea);
+  }
+
+  return (
+    <div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
+            <Lightbulb className="w-5 h-5 text-primary-500" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-heading text-lg font-bold text-text-primary">
+              Weekly SEO Keyword Ideas
+            </h2>
+            <p className="text-sm text-text-secondary mt-1">
+              Every Monday morning your AI agent researches the web and emails you
+              the top 5 long-tail blog opportunities. Generate a fresh batch now,
+              or turn any idea into a post in one click.
+            </p>
+            {message && (
+              <p className="text-sm text-primary-600 mt-2 font-medium">{message}</p>
+            )}
+          </div>
+          <button
+            onClick={onGenerate}
+            disabled={generating}
+            className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)] shrink-0"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Researching…
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate ideas now
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {batches.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <Lightbulb className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-text-muted">
+            No ideas yet. Click “Generate ideas now” or wait for Monday’s batch.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {batches.map((batch) => (
+            <div key={batch.date}>
+              <h3 className="text-sm font-semibold text-text-muted mb-3">
+                Week of {formatDate(batch.date)}
+              </h3>
+              <div className="space-y-3">
+                {batch.items.map((idea) => {
+                  const dismissed = String(idea.status) === "dismissed";
+                  const used = String(idea.status) === "used";
+                  return (
+                    <div
+                      key={String(idea.id)}
+                      className={`bg-white rounded-2xl border border-gray-100 px-5 py-4 ${
+                        dismissed ? "opacity-50" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-primary-600 bg-cream px-2 py-0.5 rounded-full">
+                              {String(idea.keyword)}
+                            </span>
+                            {used && (
+                              <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                                Used
+                              </span>
+                            )}
+                            {dismissed && (
+                              <span className="text-xs font-medium text-text-muted bg-gray-100 px-2 py-0.5 rounded-full">
+                                Dismissed
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-semibold text-text-primary text-sm mt-1.5">
+                            {String(idea.title)}
+                          </p>
+                          {idea.rationale && (
+                            <p className="text-sm text-text-secondary mt-1 leading-relaxed">
+                              {String(idea.rationale)}
+                            </p>
+                          )}
+                          {idea.intent && (
+                            <p className="text-xs text-text-muted mt-1">
+                              Intent: {String(idea.intent)}
+                            </p>
+                          )}
+                        </div>
+                        {!dismissed && (
+                          <div className="flex flex-col gap-2 shrink-0">
+                            <button
+                              onClick={() => onUse(idea)}
+                              className="flex items-center gap-1.5 text-xs font-semibold bg-primary-500 hover:bg-primary-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              New post
+                            </button>
+                            <button
+                              onClick={() => onDismiss(Number(idea.id))}
+                              className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              Dismiss
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>

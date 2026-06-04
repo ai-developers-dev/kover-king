@@ -42,6 +42,10 @@ export async function initDb() {
     await db.execute(
       "CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT)"
     );
+    // Weekly AI-generated SEO blog/keyword ideas (one batch = 5 rows).
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS keyword_ideas (id INTEGER PRIMARY KEY AUTOINCREMENT, batch_date TEXT NOT NULL, rank INTEGER, keyword TEXT NOT NULL, title TEXT, rationale TEXT, intent TEXT, status TEXT NOT NULL DEFAULT 'new', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
     // blog_posts predates author records — add the new columns if missing.
     // ALTER ... ADD COLUMN throws "duplicate column" if already present, so
     // each is wrapped to stay idempotent across restarts/deploys.

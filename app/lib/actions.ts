@@ -365,6 +365,56 @@ export const deleteBlogPost = createServerFn({ method: "POST" })
     return { success: true as const };
   });
 
+// ─── Weekly SEO keyword ideas (auth required) ────────────────────────────────
+
+export const getKeywordIdeas = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  // @ts-ignore - TanStack Start SSR register type mismatch
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    const result = await db.execute(
+      "SELECT id, batch_date, rank, keyword, title, rationale, intent, status FROM keyword_ideas ORDER BY batch_date DESC, rank ASC, id ASC LIMIT 100"
+    );
+    return result.rows;
+  });
+
+export const updateKeywordIdeaStatus = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; id: number; status: string }) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    await db.execute({
+      sql: "UPDATE keyword_ideas SET status = ? WHERE id = ?",
+      args: [data.status, data.id],
+    });
+    return { success: true as const };
+  });
+
+// Manual "Generate ideas now" — runs the same agent the Monday cron uses.
+export const runKeywordIdeasNow = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      | { success: true; batchDate: string; count: number; emailed: boolean; note?: string }
+      | { success: false; error: string }
+    > => {
+      await assertSession(data.token);
+      const { runWeeklyKeywordIdeas } = await import("./seo-agent");
+      const result = await runWeeklyKeywordIdeas();
+      if (!result.success) {
+        return { success: false, error: result.error || "Could not generate ideas." };
+      }
+      return {
+        success: true,
+        batchDate: result.batchDate,
+        count: result.ideas.length,
+        emailed: result.emailed,
+        note: result.emailed ? undefined : result.error,
+      };
+    }
+  );
+
 // ─── Authors: roster CRUD (auth required) ────────────────────────────────────
 
 type AuthorInput = {

@@ -1,5 +1,8 @@
 {
   "redirects": [
     { "source": "/admin-auth", "destination": "/admin", "permanent": true }
+  ],
+  "crons": [
+    { "path": "/api/cron/keyword-ideas", "schedule": "0 13 * * *" }
   ]
 }
