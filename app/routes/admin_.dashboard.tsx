@@ -134,12 +134,28 @@ function DashboardPage() {
     setLoading(false);
   };
 
-  const handleDeleteQuote = async (id: number) => {
+  const handleDeleteQuote = async (id: number, name?: string) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Delete the quote request${name ? ` from ${name}` : ""}? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
     await deleteQuote({ data: { token: getToken(), id } });
     setQuotes((prev) => prev.filter((q) => q.id !== id));
   };
 
-  const handleDeleteContact = async (id: number) => {
+  const handleDeleteContact = async (id: number, name?: string) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Delete the message${name ? ` from ${name}` : ""}? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
     await deleteContact({ data: { token: getToken(), id } });
     setContacts((prev) => prev.filter((c) => c.id !== id));
   };
@@ -408,31 +424,46 @@ function DashboardPage() {
                     key={String(q.id)}
                     className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
                   >
-                    <button
-                      onClick={() => toggleExpand(id)}
-                      className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
-                        <Icon className="w-5 h-5 text-primary-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-text-primary text-sm">
-                          {String(q.first_name)} {String(q.last_name)}
-                        </p>
-                        <p className="text-xs text-text-muted truncate">
-                          {String(q.insurance_type)} Insurance &middot;{" "}
-                          {String(q.email)}
-                        </p>
-                      </div>
-                      <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block">
-                        {formatDate(q.created_at)}
-                      </span>
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      )}
-                    </button>
+                    <div className="w-full flex items-center gap-4 px-5 py-4">
+                      <button
+                        onClick={() => toggleExpand(id)}
+                        className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                      >
+                        <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
+                          <Icon className="w-5 h-5 text-primary-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-text-primary text-sm">
+                            {String(q.first_name)} {String(q.last_name)}
+                          </p>
+                          <p className="text-xs text-text-muted truncate">
+                            {String(q.insurance_type)} Insurance &middot;{" "}
+                            {String(q.email)}
+                          </p>
+                        </div>
+                        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block">
+                          {formatDate(q.created_at)}
+                        </span>
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDeleteQuote(
+                            Number(q.id),
+                            `${String(q.first_name)} ${String(q.last_name)}`.trim()
+                          )
+                        }
+                        aria-label="Delete quote"
+                        title="Delete quote"
+                        className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-white hover:bg-red-500 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
 
                     {isExpanded && (
                       <div className="px-5 pb-5 border-t border-gray-100">
@@ -507,7 +538,12 @@ function DashboardPage() {
 
                         <div className="flex justify-end mt-4">
                           <button
-                            onClick={() => handleDeleteQuote(Number(q.id))}
+                            onClick={() =>
+                              handleDeleteQuote(
+                                Number(q.id),
+                                `${String(q.first_name)} ${String(q.last_name)}`.trim()
+                              )
+                            }
                             className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -537,30 +573,42 @@ function DashboardPage() {
                     key={String(c.id)}
                     className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
                   >
-                    <button
-                      onClick={() => toggleExpand(id)}
-                      className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-                        <MessageSquare className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-text-primary text-sm">
-                          {String(c.name)}
-                        </p>
-                        <p className="text-xs text-text-muted truncate">
-                          {String(c.email)}
-                        </p>
-                      </div>
-                      <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block">
-                        {formatDate(c.created_at)}
-                      </span>
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      )}
-                    </button>
+                    <div className="w-full flex items-center gap-4 px-5 py-4">
+                      <button
+                        onClick={() => toggleExpand(id)}
+                        className="flex items-center gap-4 flex-1 min-w-0 text-left"
+                      >
+                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                          <MessageSquare className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-text-primary text-sm">
+                            {String(c.name)}
+                          </p>
+                          <p className="text-xs text-text-muted truncate">
+                            {String(c.email)}
+                          </p>
+                        </div>
+                        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block">
+                          {formatDate(c.created_at)}
+                        </span>
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDeleteContact(Number(c.id), String(c.name))
+                        }
+                        aria-label="Delete message"
+                        title="Delete message"
+                        className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-white hover:bg-red-500 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
 
                     {isExpanded && (
                       <div className="px-5 pb-5 border-t border-gray-100">
@@ -602,7 +650,9 @@ function DashboardPage() {
 
                         <div className="flex justify-end mt-4">
                           <button
-                            onClick={() => handleDeleteContact(Number(c.id))}
+                            onClick={() =>
+                              handleDeleteContact(Number(c.id), String(c.name))
+                            }
                             className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
