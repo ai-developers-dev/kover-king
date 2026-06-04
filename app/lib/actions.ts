@@ -274,6 +274,135 @@ export const deleteBlogPost = createServerFn({ method: "POST" })
     return { success: true as const };
   });
 
+// ─── AI blog generation ──────────────────────────────────────────────────────
+// Admin types a subject; we research it on the live web (Tavily) and draft a
+// post with OpenAI. Returns title/description/body for the admin to review and
+// edit before publishing — it never writes to the DB directly.
+
+// Pull a compact "what the web says" context for the subject. Best-effort: if
+// the key is missing or the call fails, return "" and let the model write from
+// its own knowledge rather than hard-failing the whole request.
+async function researchSubject(subject: string): Promise<string> {
+  const key = process.env.TAVILY_API_KEY;
+  if (!key) return "";
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        api_key: key,
+        query: subject,
+        search_depth: "basic",
+        max_results: 5,
+        include_answer: true,
+      }),
+    });
+    if (!res.ok) return "";
+    const json = (await res.json()) as {
+      answer?: string;
+      results?: { title?: string; url?: string; content?: string }[];
+    };
+    const parts: string[] = [];
+    if (json.answer) parts.push(`Summary: ${json.answer}`);
+    for (const r of json.results ?? []) {
+      if (r.content) {
+        parts.push(`Source (${r.title ?? r.url ?? "web"}): ${r.content}`);
+      }
+    }
+    // Cap length to keep token usage and latency down.
+    return parts.join("\n\n").slice(0, 6000);
+  } catch {
+    return "";
+  }
+}
+
+export const generateBlogPost = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; subject: string }) => data)
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      | { success: true; title: string; description: string; body: string }
+      | { success: false; error: string }
+    > => {
+      await assertSession(data.token);
+
+      const subject = (data.subject ?? "").trim();
+      if (!subject) {
+        return { success: false, error: "Please enter a subject first." };
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return {
+          success: false,
+          error:
+            "OpenAI API key is not configured on the server. Add OPENAI_API_KEY and redeploy.",
+        };
+      }
+
+      const research = await researchSubject(subject);
+
+      const systemPrompt = [
+        "You are a content writer for Kover King Insurance, an independent insurance agency in Springfield, IL.",
+        "Kover King compares quotes from 30+ carriers and has served Central Illinois for ~30 years. Phone: (217) 960-8997.",
+        "Write a concise, genuinely useful blog post for everyday readers — clear, warm, and practical, not salesy.",
+        "STRICT BODY FORMAT (the site renderer only understands this):",
+        "- Separate paragraphs with a blank line.",
+        '- A line starting with "## " is a section heading.',
+        '- A line starting with "- " is a bullet point.',
+        "- Do NOT use Markdown bold, italics, links, images, or code. Plain text only with the rules above.",
+        "Do NOT invent statistics, dollar amounts, dates, or local facts unless they appear in the provided research. When unsure, keep claims general.",
+        "Return ONLY a JSON object with exactly these keys: title (string, <=60 chars, no brand suffix), description (string, 1-2 sentence summary), body (string, the article using the format rules above).",
+      ].join("\n");
+
+      const userPrompt = research
+        ? `Subject: ${subject}\n\nWeb research to ground the article (use only what's relevant, do not copy verbatim):\n${research}`
+        : `Subject: ${subject}\n\n(No external research available — write from general, accurate knowledge and avoid specific unverifiable figures.)`;
+
+      try {
+        const { default: OpenAI } = await import("openai");
+        const openai = new OpenAI({ apiKey });
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        });
+        const raw = completion.choices[0]?.message?.content ?? "";
+        let parsed: { title?: string; description?: string; body?: string };
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          return {
+            success: false,
+            error: "The AI returned an unexpected format. Please try again.",
+          };
+        }
+        if (!parsed.title || !parsed.description || !parsed.body) {
+          return {
+            success: false,
+            error: "The AI response was incomplete. Please try again.",
+          };
+        }
+        return {
+          success: true,
+          title: parsed.title.trim(),
+          description: parsed.description.trim(),
+          body: parsed.body.trim(),
+        };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return {
+          success: false,
+          error: `AI generation failed: ${msg}`,
+        };
+      }
+    }
+  );
+
 export const submitQuoteFromLead = createServerFn({ method: "POST" })
   .inputValidator(
     (data: {

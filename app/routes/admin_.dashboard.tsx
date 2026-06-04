@@ -10,6 +10,7 @@ import {
   createBlogPost,
   updateBlogPost,
   deleteBlogPost,
+  generateBlogPost,
 } from "~/lib/actions";
 import { slugify } from "~/content/blog";
 import {
@@ -31,6 +32,7 @@ import {
   Pencil,
   Save,
   X,
+  Sparkles,
 } from "lucide-react";
 
 function getToken(): string {
@@ -40,6 +42,7 @@ function getToken(): string {
 
 type BlogFormState = {
   originalSlug: string | null; // null = creating a new post
+  subject: string; // research topic for AI generation (not stored)
   title: string;
   slug: string;
   description: string;
@@ -55,6 +58,7 @@ function emptyBlogForm(): BlogFormState {
   const today = new Date().toISOString().slice(0, 10);
   return {
     originalSlug: null,
+    subject: "",
     title: "",
     slug: "",
     description: "",
@@ -99,6 +103,7 @@ function DashboardPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [blogForm, setBlogForm] = useState<BlogFormState | null>(null);
   const [blogSaving, setBlogSaving] = useState(false);
+  const [blogGenerating, setBlogGenerating] = useState(false);
   const [blogError, setBlogError] = useState("");
   // Whether the slug has been hand-edited (so we stop auto-deriving it).
   const [slugTouched, setSlugTouched] = useState(false);
@@ -185,6 +190,7 @@ function DashboardPage() {
     setSlugTouched(true);
     setBlogForm({
       originalSlug: String(p.slug),
+      subject: "",
       title: String(p.title),
       slug: String(p.slug),
       description: String(p.description),
@@ -204,6 +210,40 @@ function DashboardPage() {
 
   const updateForm = (patch: Partial<BlogFormState>) =>
     setBlogForm((f) => (f ? { ...f, ...patch } : f));
+
+  const handleGenerate = async () => {
+    if (!blogForm) return;
+    setBlogError("");
+    const subject = blogForm.subject.trim();
+    if (!subject) {
+      setBlogError("Enter a subject for the AI to research and write about.");
+      return;
+    }
+    setBlogGenerating(true);
+    try {
+      const result = await generateBlogPost({
+        data: { token: getToken(), subject },
+      });
+      if (!result.success) {
+        setBlogError(result.error || "Could not generate the post.");
+        setBlogGenerating(false);
+        return;
+      }
+      // Fill the draft; auto-derive the slug from the new title unless the
+      // admin has already hand-edited it.
+      updateForm({
+        title: result.title,
+        description: result.description,
+        body: result.body,
+        ...(slugTouched ? {} : { slug: slugify(result.title) }),
+      });
+    } catch {
+      setBlogError(
+        "Could not generate the post. Your session may have expired, or it timed out."
+      );
+    }
+    setBlogGenerating(false);
+  };
 
   const handleSaveBlog = async () => {
     if (!blogForm) return;
@@ -395,6 +435,7 @@ function DashboardPage() {
             posts={posts}
             form={blogForm}
             saving={blogSaving}
+            generating={blogGenerating}
             error={blogError}
             slugTouched={slugTouched}
             setSlugTouched={setSlugTouched}
@@ -403,6 +444,7 @@ function DashboardPage() {
             onDelete={handleDeletePost}
             onCancel={cancelBlogForm}
             onSave={handleSaveBlog}
+            onGenerate={handleGenerate}
             updateForm={updateForm}
             formatDate={formatDate}
           />
@@ -678,6 +720,7 @@ function BlogPanel({
   posts,
   form,
   saving,
+  generating,
   error,
   slugTouched,
   setSlugTouched,
@@ -686,6 +729,7 @@ function BlogPanel({
   onDelete,
   onCancel,
   onSave,
+  onGenerate,
   updateForm,
   formatDate,
 }: {
@@ -693,6 +737,7 @@ function BlogPanel({
   posts: any[];
   form: BlogFormState | null;
   saving: boolean;
+  generating: boolean;
   error: string;
   slugTouched: boolean;
   setSlugTouched: (b: boolean) => void;
@@ -702,6 +747,7 @@ function BlogPanel({
   onDelete: (slug: string) => void;
   onCancel: () => void;
   onSave: () => void;
+  onGenerate: () => void;
   updateForm: (patch: Partial<BlogFormState>) => void;
   formatDate: (d: unknown) => string;
 }) {
@@ -730,6 +776,48 @@ function BlogPanel({
             {error}
           </div>
         )}
+
+        {/* AI draft generator */}
+        <div className="mb-6 rounded-2xl border border-primary-200 bg-primary-50/60 p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-primary-500" />
+            <h3 className="font-semibold text-text-primary text-sm">
+              Write with AI
+            </h3>
+          </div>
+          <p className="text-xs text-text-muted mb-3 leading-relaxed">
+            Enter a subject and click Generate. The AI researches it on the web
+            and drafts the title, summary, and body below for you to review and
+            edit before publishing.
+          </p>
+          <label className="block text-sm font-semibold text-text-primary mb-1.5">
+            Subject
+          </label>
+          <textarea
+            value={form.subject}
+            onChange={(e) => updateForm({ subject: e.target.value })}
+            rows={2}
+            placeholder="e.g. Why renters in Springfield, IL should consider renters insurance"
+            className={`${fieldClass} resize-none`}
+          />
+          <button
+            onClick={onGenerate}
+            disabled={generating || !form.subject.trim()}
+            className="mt-3 flex items-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Researching &amp; writing… (up to a minute)
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate with AI
+              </>
+            )}
+          </button>
+        </div>
 
         <div className="space-y-5">
           <div>

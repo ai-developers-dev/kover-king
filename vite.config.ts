@@ -13,6 +13,8 @@ export default defineConfig({
       srcDirectory: "app",
       routesDirectory: "routes",
     }),
-    nitro({ serverDir: "app/server" }),
+    // maxDuration lets the AI blog generation (web research + LLM write) run
+    // up to 60s on Vercel Pro. On the free tier Vercel still caps at ~10s.
+    nitro({ serverDir: "app/server", vercel: { functions: { maxDuration: 60 } } }),
   ],
 });
