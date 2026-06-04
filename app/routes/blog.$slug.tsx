@@ -10,6 +10,7 @@ type LoadedPost = {
   description: string;
   category: string | null;
   author: string | null;
+  authorPhotoUrl: string | null;
   readMinutes: number | null;
   datePublished: string;
   blocks: BlogBlock[];
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/blog/$slug")({
         description: String(row.description),
         category: row.category ? String(row.category) : null,
         author: row.author ? String(row.author) : null,
+        authorPhotoUrl: row.author_photo_url ? String(row.author_photo_url) : null,
         readMinutes: row.read_minutes == null ? null : Number(row.read_minutes),
         datePublished: String(row.date_published),
         blocks: parseBody(String(row.body ?? "")),
@@ -114,7 +116,18 @@ function BlogPostPage() {
                   {post.readMinutes} min read
                 </span>
               )}
-              {post.author && <span>By {post.author}</span>}
+              {post.author && (
+                <span className="flex items-center gap-2">
+                  {post.authorPhotoUrl && (
+                    <img
+                      src={post.authorPhotoUrl}
+                      alt={post.author}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  )}
+                  By {post.author}
+                </span>
+              )}
             </div>
           </div>
         </header>
@@ -162,8 +175,8 @@ function BlogPostPage() {
               description: post.description,
               path: `/blog/${post.slug}`,
               datePublished: post.datePublished,
-              dateModified: post.dateModified,
               author: post.author,
+              authorPhotoUrl: post.authorPhotoUrl,
             }),
             breadcrumbSchema([
               { name: "Home", path: "/" },

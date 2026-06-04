@@ -34,6 +34,27 @@ export async function initDb() {
     await db.execute(
       "CREATE TABLE IF NOT EXISTS admin_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT UNIQUE NOT NULL, expires_at DATETIME NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
     );
+    // Reusable author roster for blog bylines.
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS authors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, title TEXT, bio TEXT, photo_url TEXT, sort_order INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    // Small key/value store (used for the round-robin author rotation pointer).
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT)"
+    );
+    // blog_posts predates author records — add the new columns if missing.
+    // ALTER ... ADD COLUMN throws "duplicate column" if already present, so
+    // each is wrapped to stay idempotent across restarts/deploys.
+    for (const col of [
+      "ALTER TABLE blog_posts ADD COLUMN author_id INTEGER",
+      "ALTER TABLE blog_posts ADD COLUMN author_photo_url TEXT",
+    ]) {
+      try {
+        await db.execute(col);
+      } catch {
+        // Column already exists — ignore.
+      }
+    }
     // Seed the original sample post once so existing /blog links keep working.
     await db.execute({
       sql: "INSERT OR IGNORE INTO blog_posts (slug, title, description, category, author, read_minutes, body, published, date_published) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)",

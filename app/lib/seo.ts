@@ -100,8 +100,17 @@ export function articleSchema(opts: {
   path: string;
   datePublished: string;
   dateModified?: string;
-  author?: string;
+  author?: string | null;
+  authorPhotoUrl?: string | null;
 }) {
+  // An individual byline is a Person; fall back to the agency (Organization).
+  const author = opts.author
+    ? {
+        "@type": "Person",
+        name: opts.author,
+        ...(opts.authorPhotoUrl ? { image: opts.authorPhotoUrl } : {}),
+      }
+    : { "@type": "Organization", name: NAP.name };
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -109,7 +118,7 @@ export function articleSchema(opts: {
     description: opts.description,
     datePublished: opts.datePublished,
     dateModified: opts.dateModified ?? opts.datePublished,
-    author: { "@type": "Organization", name: opts.author ?? NAP.name },
+    author,
     publisher: {
       "@type": "Organization",
       name: NAP.name,

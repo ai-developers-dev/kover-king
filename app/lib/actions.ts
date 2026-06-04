@@ -155,7 +155,7 @@ export const getPublishedPosts = createServerFn({ method: "GET" })
   .handler(async () => {
     await initDb();
     const result = await db.execute(
-      "SELECT slug, title, description, category, author, read_minutes, body, date_published, published FROM blog_posts WHERE published = 1 ORDER BY date_published DESC, id DESC"
+      "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published FROM blog_posts WHERE published = 1 ORDER BY date_published DESC, id DESC"
     );
     return result.rows;
   });
@@ -166,7 +166,7 @@ export const getPublishedPost = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     await initDb();
     const result = await db.execute({
-      sql: "SELECT slug, title, description, category, author, read_minutes, body, date_published, published FROM blog_posts WHERE slug = ? AND published = 1 LIMIT 1",
+      sql: "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published FROM blog_posts WHERE slug = ? AND published = 1 LIMIT 1",
       args: [data.slug],
     });
     return result.rows[0] ?? null;
@@ -180,12 +180,65 @@ type BlogInput = {
   title: string;
   description: string;
   category?: string;
-  author?: string;
+  // Author selection: a numeric author id, the string "rotate" for
+  // round-robin assignment, or null/omitted to fall back to free text.
+  authorId?: number | "rotate" | null;
+  author?: string; // free-text fallback / legacy
   readMinutes?: number;
   body: string;
   published: boolean;
   datePublished: string;
 };
+
+// Resolve the author selection into a { name, photoUrl, id } snapshot stored
+// on the post. Round-robin advances a pointer in app_state so each new
+// "rotate" post gets the next author in (sort_order, id) order.
+async function resolveAuthor(
+  authorId: number | "rotate" | null | undefined,
+  fallbackName: string | undefined
+): Promise<{ id: number | null; name: string | null; photoUrl: string | null }> {
+  if (authorId === "rotate") {
+    const all = await db.execute(
+      "SELECT id, name, photo_url FROM authors ORDER BY sort_order IS NULL, sort_order, id"
+    );
+    if (all.rows.length === 0) {
+      return { id: null, name: fallbackName || null, photoUrl: null };
+    }
+    const ptr = await db.execute({
+      sql: "SELECT value FROM app_state WHERE key = 'last_author_id'",
+      args: [],
+    });
+    const lastId = ptr.rows[0] ? Number(ptr.rows[0].value) : null;
+    const idx =
+      lastId == null
+        ? 0
+        : (all.rows.findIndex((r) => Number(r.id) === lastId) + 1) % all.rows.length;
+    const chosen = all.rows[idx];
+    await db.execute({
+      sql: "INSERT INTO app_state (key, value) VALUES ('last_author_id', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      args: [String(chosen.id)],
+    });
+    return {
+      id: Number(chosen.id),
+      name: String(chosen.name),
+      photoUrl: chosen.photo_url ? String(chosen.photo_url) : null,
+    };
+  }
+  if (typeof authorId === "number") {
+    const row = await db.execute({
+      sql: "SELECT id, name, photo_url FROM authors WHERE id = ? LIMIT 1",
+      args: [authorId],
+    });
+    if (row.rows[0]) {
+      return {
+        id: Number(row.rows[0].id),
+        name: String(row.rows[0].name),
+        photoUrl: row.rows[0].photo_url ? String(row.rows[0].photo_url) : null,
+      };
+    }
+  }
+  return { id: null, name: fallbackName || null, photoUrl: null };
+}
 
 export const getBlogPostsAdmin = createServerFn({ method: "POST" })
   .inputValidator((data: { token: string }) => data)
@@ -193,7 +246,7 @@ export const getBlogPostsAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertSession(data.token);
     const result = await db.execute(
-      "SELECT id, slug, title, description, category, author, read_minutes, body, date_published, published FROM blog_posts ORDER BY date_published DESC, id DESC"
+      "SELECT id, slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, date_published, published FROM blog_posts ORDER BY date_published DESC, id DESC"
     );
     return result.rows;
   });
@@ -212,14 +265,17 @@ export const createBlogPost = createServerFn({ method: "POST" })
     if (dupe.rows.length > 0) {
       return { success: false as const, error: "A post with that URL already exists" };
     }
+    const a = await resolveAuthor(data.authorId, data.author);
     await db.execute({
-      sql: "INSERT INTO blog_posts (slug, title, description, category, author, read_minutes, body, published, date_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      sql: "INSERT INTO blog_posts (slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, published, date_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         data.slug,
         data.title,
         data.description,
         data.category || null,
-        data.author || null,
+        a.name,
+        a.id,
+        a.photoUrl,
         data.readMinutes ?? null,
         data.body,
         data.published ? 1 : 0,
@@ -245,14 +301,17 @@ export const updateBlogPost = createServerFn({ method: "POST" })
         return { success: false as const, error: "A post with that URL already exists" };
       }
     }
+    const a = await resolveAuthor(data.authorId, data.author);
     await db.execute({
-      sql: "UPDATE blog_posts SET slug = ?, title = ?, description = ?, category = ?, author = ?, read_minutes = ?, body = ?, published = ?, date_published = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+      sql: "UPDATE blog_posts SET slug = ?, title = ?, description = ?, category = ?, author = ?, author_id = ?, author_photo_url = ?, read_minutes = ?, body = ?, published = ?, date_published = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
       args: [
         data.slug,
         data.title,
         data.description,
         data.category || null,
-        data.author || null,
+        a.name,
+        a.id,
+        a.photoUrl,
         data.readMinutes ?? null,
         data.body,
         data.published ? 1 : 0,
@@ -273,6 +332,126 @@ export const deleteBlogPost = createServerFn({ method: "POST" })
     });
     return { success: true as const };
   });
+
+// ─── Authors: roster CRUD (auth required) ────────────────────────────────────
+
+type AuthorInput = {
+  token: string;
+  name: string;
+  title?: string;
+  bio?: string;
+  photoUrl?: string;
+};
+
+export const getAuthorsAdmin = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  // @ts-ignore - TanStack Start SSR register type mismatch
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    const result = await db.execute(
+      "SELECT id, name, title, bio, photo_url, sort_order FROM authors ORDER BY sort_order IS NULL, sort_order, id"
+    );
+    return result.rows;
+  });
+
+export const createAuthor = createServerFn({ method: "POST" })
+  .inputValidator((data: AuthorInput) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    if (!data.name?.trim()) {
+      return { success: false as const, error: "Author name is required." };
+    }
+    // Append to the end of the rotation order.
+    const max = await db.execute(
+      "SELECT COALESCE(MAX(sort_order), 0) AS m FROM authors"
+    );
+    const nextOrder = Number(max.rows[0]?.m ?? 0) + 1;
+    await db.execute({
+      sql: "INSERT INTO authors (name, title, bio, photo_url, sort_order) VALUES (?, ?, ?, ?, ?)",
+      args: [
+        data.name.trim(),
+        data.title?.trim() || null,
+        data.bio?.trim() || null,
+        data.photoUrl?.trim() || null,
+        nextOrder,
+      ],
+    });
+    return { success: true as const };
+  });
+
+export const updateAuthor = createServerFn({ method: "POST" })
+  .inputValidator((data: AuthorInput & { id: number }) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    if (!data.name?.trim()) {
+      return { success: false as const, error: "Author name is required." };
+    }
+    await db.execute({
+      sql: "UPDATE authors SET name = ?, title = ?, bio = ?, photo_url = ? WHERE id = ?",
+      args: [
+        data.name.trim(),
+        data.title?.trim() || null,
+        data.bio?.trim() || null,
+        data.photoUrl?.trim() || null,
+        data.id,
+      ],
+    });
+    return { success: true as const };
+  });
+
+export const deleteAuthor = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; id: number }) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    await db.execute({ sql: "DELETE FROM authors WHERE id = ?", args: [data.id] });
+    // Existing posts keep their snapshotted author name/photo, so deleting an
+    // author does not blank out past bylines.
+    return { success: true as const };
+  });
+
+// Upload an author photo to Vercel Blob. The client sends the file as a
+// base64 data string; we decode and store it, returning the public URL.
+export const uploadAuthorPhoto = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: { token: string; filename: string; contentType: string; dataBase64: string }) =>
+      data
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      { success: true; url: string } | { success: false; error: string }
+    > => {
+      await assertSession(data.token);
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        return {
+          success: false,
+          error:
+            "Photo storage isn't configured yet. Enable Vercel Blob and set BLOB_READ_WRITE_TOKEN.",
+        };
+      }
+      if (!data.dataBase64) {
+        return { success: false, error: "No image data received." };
+      }
+      try {
+        const buffer = Buffer.from(data.dataBase64, "base64");
+        // ~4MB cap to keep uploads quick and within request limits.
+        if (buffer.length > 4 * 1024 * 1024) {
+          return { success: false, error: "Image is too large (max 4MB)." };
+        }
+        const { put } = await import("@vercel/blob");
+        const safeName = (data.filename || "author").replace(/[^a-zA-Z0-9._-]/g, "_");
+        const blob = await put(`authors/${Date.now()}-${safeName}`, buffer, {
+          access: "public",
+          contentType: data.contentType || "image/jpeg",
+        });
+        return { success: true, url: blob.url };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return { success: false, error: `Upload failed: ${msg}` };
+      }
+    }
+  );
 
 // ─── AI blog generation ──────────────────────────────────────────────────────
 // Admin types a subject; we research it on the live web (Tavily) and draft a
@@ -346,7 +525,8 @@ export const generateBlogPost = createServerFn({ method: "POST" })
       const systemPrompt = [
         "You are a content writer for Kover King Insurance, an independent insurance agency in Springfield, IL.",
         "Kover King compares quotes from 30+ carriers and has served Central Illinois for ~30 years. Phone: (217) 960-8997.",
-        "Write a concise, genuinely useful blog post for everyday readers — clear, warm, and practical, not salesy.",
+        "Write a genuinely useful blog post for everyday readers — clear, warm, and practical, not salesy.",
+        "LENGTH: The body must be a well-developed article of 300–400 words. Use 3–5 short sections (each with a ## heading) and include at least one bullet list where it fits naturally. Do not pad with fluff.",
         "STRICT BODY FORMAT (the site renderer only understands this):",
         "- Separate paragraphs with a blank line.",
         '- A line starting with "## " is a section heading.',
@@ -366,6 +546,7 @@ export const generateBlogPost = createServerFn({ method: "POST" })
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           response_format: { type: "json_object" },
+          max_tokens: 1200,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

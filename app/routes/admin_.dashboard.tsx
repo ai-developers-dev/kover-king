@@ -11,6 +11,11 @@ import {
   updateBlogPost,
   deleteBlogPost,
   generateBlogPost,
+  getAuthorsAdmin,
+  createAuthor,
+  updateAuthor,
+  deleteAuthor,
+  uploadAuthorPhoto,
 } from "~/lib/actions";
 import { slugify } from "~/content/blog";
 import {
@@ -33,6 +38,8 @@ import {
   Save,
   X,
   Sparkles,
+  Users,
+  Upload,
 } from "lucide-react";
 
 function getToken(): string {
@@ -47,7 +54,8 @@ type BlogFormState = {
   slug: string;
   description: string;
   category: string;
-  author: string;
+  // Author selection: "" = none, "rotate" = round-robin, or a numeric id string.
+  authorChoice: string;
   readMinutes: string;
   datePublished: string;
   published: boolean;
@@ -63,12 +71,24 @@ function emptyBlogForm(): BlogFormState {
     slug: "",
     description: "",
     category: "",
-    author: "Kover King Insurance",
+    authorChoice: "",
     readMinutes: "",
     datePublished: today,
     published: true,
     body: "",
   };
+}
+
+type AuthorFormState = {
+  id: number | null; // null = creating
+  name: string;
+  title: string;
+  bio: string;
+  photoUrl: string;
+};
+
+function emptyAuthorForm(): AuthorFormState {
+  return { id: null, name: "", title: "", bio: "", photoUrl: "" };
 }
 
 export const Route = createFileRoute("/admin_/dashboard")({
@@ -81,7 +101,7 @@ export const Route = createFileRoute("/admin_/dashboard")({
   component: DashboardPage,
 });
 
-type Tab = "quotes" | "contacts" | "blog";
+type Tab = "quotes" | "contacts" | "blog" | "authors";
 
 const insuranceIcon: Record<string, typeof Car> = {
   Auto: Car,
@@ -107,6 +127,12 @@ function DashboardPage() {
   const [blogError, setBlogError] = useState("");
   // Whether the slug has been hand-edited (so we stop auto-deriving it).
   const [slugTouched, setSlugTouched] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [authors, setAuthors] = useState<any[]>([]);
+  const [authorForm, setAuthorForm] = useState<AuthorFormState | null>(null);
+  const [authorSaving, setAuthorSaving] = useState(false);
+  const [authorUploading, setAuthorUploading] = useState(false);
+  const [authorError, setAuthorError] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -123,14 +149,16 @@ function DashboardPage() {
     setLoading(true);
     const token = getToken();
     try {
-      const [q, c, p] = await Promise.all([
+      const [q, c, p, a] = await Promise.all([
         getQuotes({ data: { token } }),
         getContacts({ data: { token } }),
         getBlogPostsAdmin({ data: { token } }),
+        getAuthorsAdmin({ data: { token } }),
       ]);
       setQuotes(q as any[]);
       setContacts(c as any[]);
       setPosts(p as any[]);
+      setAuthors(a as any[]);
     } catch {
       // A failure here usually means the session expired — send back to login.
       sessionStorage.removeItem("admin-token");
@@ -195,7 +223,7 @@ function DashboardPage() {
       slug: String(p.slug),
       description: String(p.description),
       category: p.category ? String(p.category) : "",
-      author: p.author ? String(p.author) : "",
+      authorChoice: p.author_id != null ? String(p.author_id) : "",
       readMinutes: p.read_minutes == null ? "" : String(p.read_minutes),
       datePublished: String(p.date_published),
       published: Number(p.published) === 1,
@@ -258,13 +286,19 @@ function DashboardPage() {
       return;
     }
     setBlogSaving(true);
+    const authorId: number | "rotate" | null =
+      blogForm.authorChoice === "rotate"
+        ? "rotate"
+        : blogForm.authorChoice
+          ? Number(blogForm.authorChoice)
+          : null;
     const payload = {
       token: getToken(),
       slug,
       title: blogForm.title.trim(),
       description: blogForm.description.trim(),
       category: blogForm.category.trim() || undefined,
-      author: blogForm.author.trim() || undefined,
+      authorId,
       readMinutes: blogForm.readMinutes ? Number(blogForm.readMinutes) : undefined,
       body: blogForm.body,
       published: blogForm.published,
@@ -290,6 +324,110 @@ function DashboardPage() {
   const handleDeletePost = async (slug: string) => {
     await deleteBlogPost({ data: { token: getToken(), slug } });
     setPosts((prev) => prev.filter((p) => p.slug !== slug));
+  };
+
+  // ── Author handlers ──
+  const startNewAuthor = () => {
+    setAuthorError("");
+    setAuthorForm(emptyAuthorForm());
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const startEditAuthor = (a: any) => {
+    setAuthorError("");
+    setAuthorForm({
+      id: Number(a.id),
+      name: String(a.name),
+      title: a.title ? String(a.title) : "",
+      bio: a.bio ? String(a.bio) : "",
+      photoUrl: a.photo_url ? String(a.photo_url) : "",
+    });
+  };
+
+  const cancelAuthorForm = () => {
+    setAuthorForm(null);
+    setAuthorError("");
+  };
+
+  const updateAuthorForm = (patch: Partial<AuthorFormState>) =>
+    setAuthorForm((f) => (f ? { ...f, ...patch } : f));
+
+  const handleAuthorPhotoFile = async (file: File) => {
+    setAuthorError("");
+    setAuthorUploading(true);
+    try {
+      const dataBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || "");
+          // strip the "data:...;base64," prefix
+          resolve(result.split(",")[1] ?? "");
+        };
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
+      const result = await uploadAuthorPhoto({
+        data: {
+          token: getToken(),
+          filename: file.name,
+          contentType: file.type,
+          dataBase64,
+        },
+      });
+      if (!result.success) {
+        setAuthorError(result.error || "Upload failed.");
+      } else {
+        updateAuthorForm({ photoUrl: result.url });
+      }
+    } catch {
+      setAuthorError("Could not upload the image. Please try again.");
+    }
+    setAuthorUploading(false);
+  };
+
+  const handleSaveAuthor = async () => {
+    if (!authorForm) return;
+    setAuthorError("");
+    if (!authorForm.name.trim()) {
+      setAuthorError("Author name is required.");
+      return;
+    }
+    setAuthorSaving(true);
+    const payload = {
+      token: getToken(),
+      name: authorForm.name.trim(),
+      title: authorForm.title.trim() || undefined,
+      bio: authorForm.bio.trim() || undefined,
+      photoUrl: authorForm.photoUrl.trim() || undefined,
+    };
+    try {
+      const result = authorForm.id
+        ? await updateAuthor({ data: { ...payload, id: authorForm.id } })
+        : await createAuthor({ data: payload });
+      if (!result.success) {
+        setAuthorError(result.error || "Could not save the author.");
+        setAuthorSaving(false);
+        return;
+      }
+      setAuthorForm(null);
+      await loadData();
+    } catch {
+      setAuthorError("Could not save the author. Your session may have expired.");
+    }
+    setAuthorSaving(false);
+  };
+
+  const handleDeleteAuthor = async (id: number, name: string) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Delete author "${name}"? Existing posts keep their byline; this only removes them from the roster.`
+      )
+    ) {
+      return;
+    }
+    await deleteAuthor({ data: { token: getToken(), id } });
+    setAuthors((prev) => prev.filter((a) => Number(a.id) !== id));
   };
 
   const toggleExpand = (id: string) => {
@@ -423,6 +561,17 @@ function DashboardPage() {
             <BookOpen className="w-4 h-4" />
             Blog ({posts.length})
           </button>
+          <button
+            onClick={() => setTab("authors")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              tab === "authors"
+                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Authors ({authors.length})
+          </button>
         </div>
 
         {/* Content */}
@@ -433,6 +582,7 @@ function DashboardPage() {
         ) : tab === "blog" ? (
           <BlogPanel
             posts={posts}
+            authors={authors}
             form={blogForm}
             saving={blogSaving}
             generating={blogGenerating}
@@ -447,6 +597,21 @@ function DashboardPage() {
             onGenerate={handleGenerate}
             updateForm={updateForm}
             formatDate={formatDate}
+          />
+        ) : tab === "authors" ? (
+          <AuthorsPanel
+            authors={authors}
+            form={authorForm}
+            saving={authorSaving}
+            uploading={authorUploading}
+            error={authorError}
+            onNew={startNewAuthor}
+            onEdit={startEditAuthor}
+            onDelete={handleDeleteAuthor}
+            onCancel={cancelAuthorForm}
+            onSave={handleSaveAuthor}
+            onPhotoFile={handleAuthorPhotoFile}
+            updateForm={updateAuthorForm}
           />
         ) : tab === "quotes" ? (
           <div className="space-y-3">
@@ -718,6 +883,7 @@ function DashboardPage() {
 
 function BlogPanel({
   posts,
+  authors,
   form,
   saving,
   generating,
@@ -735,6 +901,8 @@ function BlogPanel({
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   posts: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  authors: any[];
   form: BlogFormState | null;
   saving: boolean;
   generating: boolean;
@@ -915,13 +1083,29 @@ function BlogPanel({
             <label className="block text-sm font-semibold text-text-primary mb-1.5">
               Author
             </label>
-            <input
-              type="text"
-              value={form.author}
-              onChange={(e) => updateForm({ author: e.target.value })}
-              placeholder="Kover King Insurance"
-              className={fieldClass}
-            />
+            <select
+              value={form.authorChoice}
+              onChange={(e) => updateForm({ authorChoice: e.target.value })}
+              className={`${fieldClass} cursor-pointer`}
+            >
+              <option value="">No author</option>
+              <option value="rotate">🔀 Rotate authors (round-robin)</option>
+              {authors.map((a) => (
+                <option key={String(a.id)} value={String(a.id)}>
+                  {String(a.name)}
+                </option>
+              ))}
+            </select>
+            {form.authorChoice === "rotate" && (
+              <p className="text-xs text-text-muted mt-1">
+                Each new post is assigned the next author in your roster, in turn.
+              </p>
+            )}
+            {authors.length === 0 && (
+              <p className="text-xs text-text-muted mt-1">
+                No authors yet — add some in the Authors tab to assign bylines.
+              </p>
+            )}
           </div>
 
           <div>
@@ -1054,6 +1238,252 @@ function BlogPanel({
               </button>
               <button
                 onClick={() => onDelete(String(p.slug))}
+                className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Authors management panel ────────────────────────────────────────────────
+
+function AuthorsPanel({
+  authors,
+  form,
+  saving,
+  uploading,
+  error,
+  onNew,
+  onEdit,
+  onDelete,
+  onCancel,
+  onSave,
+  onPhotoFile,
+  updateForm,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  authors: any[];
+  form: AuthorFormState | null;
+  saving: boolean;
+  uploading: boolean;
+  error: string;
+  onNew: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEdit: (a: any) => void;
+  onDelete: (id: number, name: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
+  onPhotoFile: (file: File) => void;
+  updateForm: (patch: Partial<AuthorFormState>) => void;
+}) {
+  const fieldClass =
+    "w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition placeholder-gray-400";
+
+  if (form) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 max-w-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-heading text-xl font-bold text-text-primary">
+            {form.id ? "Edit Author" : "New Author"}
+          </h2>
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Cancel
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-5">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-5">
+          {/* Photo */}
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Photo
+            </label>
+            <div className="flex items-center gap-4">
+              {form.photoUrl ? (
+                <img
+                  src={form.photoUrl}
+                  alt="Author"
+                  className="w-16 h-16 rounded-full object-cover border border-gray-200"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                  <Users className="w-7 h-7" />
+                </div>
+              )}
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-primary-500 bg-cream hover:bg-primary-50 px-4 py-2.5 rounded-xl cursor-pointer transition-colors">
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading…
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    {form.photoUrl ? "Replace photo" : "Upload photo"}
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onPhotoFile(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-text-muted mt-2">
+              JPG or PNG, up to 4MB. Stored securely via Vercel Blob.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => updateForm({ name: e.target.value })}
+              placeholder="Jane Smith"
+              className={fieldClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Title / role
+            </label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => updateForm({ title: e.target.value })}
+              placeholder="Licensed Insurance Agent"
+              className={fieldClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-text-primary mb-1.5">
+              Short bio
+            </label>
+            <textarea
+              value={form.bio}
+              onChange={(e) => updateForm({ bio: e.target.value })}
+              rows={3}
+              placeholder="A sentence or two about this author."
+              className={`${fieldClass} resize-none`}
+            />
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={onSave}
+              disabled={saving || uploading}
+              className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-colors shadow-[0_8px_30px_-8px_rgba(233,86,12,0.4)]"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  {form.id ? "Save Changes" : "Add Author"}
+                </>
+              )}
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-6 py-3 text-sm font-semibold text-text-secondary hover:text-text-primary bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5">
+        <p className="text-sm text-text-muted">
+          {authors.length} {authors.length === 1 ? "author" : "authors"}
+        </p>
+        <button
+          onClick={onNew}
+          className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+        >
+          <Plus className="w-4 h-4" />
+          New Author
+        </button>
+      </div>
+
+      {authors.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-text-muted">
+            No authors yet. Add authors here, then assign them (or rotate them)
+            on each blog post.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {authors.map((a) => (
+            <div
+              key={String(a.id)}
+              className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4"
+            >
+              {a.photo_url ? (
+                <img
+                  src={String(a.photo_url)}
+                  alt={String(a.name)}
+                  className="w-11 h-11 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
+                  <Users className="w-5 h-5" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-text-primary text-sm truncate">
+                  {String(a.name)}
+                </p>
+                {a.title && (
+                  <p className="text-xs text-text-muted truncate">
+                    {String(a.title)}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => onEdit(a)}
+                className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(Number(a.id), String(a.name))}
                 className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />

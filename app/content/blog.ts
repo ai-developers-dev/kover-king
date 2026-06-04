@@ -18,6 +18,7 @@ export type BlogPost = {
   description: string;
   category?: string | null;
   author?: string | null;
+  authorPhotoUrl?: string | null;
   readMinutes?: number | null;
   datePublished: string;
   published: boolean;

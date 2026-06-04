@@ -11,6 +11,8 @@ type PostCard = {
   category: string | null;
   readMinutes: number | null;
   datePublished: string;
+  author: string | null;
+  authorPhotoUrl: string | null;
 };
 
 export const Route = createFileRoute("/blog/")({
@@ -24,6 +26,8 @@ export const Route = createFileRoute("/blog/")({
         category: r.category ? String(r.category) : null,
         readMinutes: r.read_minutes == null ? null : Number(r.read_minutes),
         datePublished: String(r.date_published),
+        author: r.author ? String(r.author) : null,
+        authorPhotoUrl: r.author_photo_url ? String(r.author_photo_url) : null,
       })),
     };
   },
@@ -103,7 +107,19 @@ function BlogIndexPage() {
                   <p className="mt-3 flex-1 text-base leading-relaxed text-text-secondary">
                     {post.description}
                   </p>
-                  <div className="mt-5 flex items-center gap-4 text-xs text-text-muted">
+                  {post.author && (
+                    <div className="mt-5 flex items-center gap-2 text-xs text-text-secondary">
+                      {post.authorPhotoUrl && (
+                        <img
+                          src={post.authorPhotoUrl}
+                          alt={post.author}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      )}
+                      <span className="font-medium">{post.author}</span>
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center gap-4 text-xs text-text-muted">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5" />
                       {formatPostDate(post.datePublished)}
