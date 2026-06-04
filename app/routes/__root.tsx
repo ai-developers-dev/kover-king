@@ -41,7 +41,8 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/favicon.svg" },
       // NOTE: canonical is intentionally NOT set here. Each route sets its own
       // self-referencing canonical so pages don't all inherit the homepage URL.
       {
