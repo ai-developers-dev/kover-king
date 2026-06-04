@@ -526,7 +526,7 @@ export const generateBlogPost = createServerFn({ method: "POST" })
         "You are a content writer for Kover King Insurance, an independent insurance agency in Springfield, IL.",
         "Kover King compares quotes from 30+ carriers and has served Central Illinois for ~30 years. Phone: (217) 960-8997.",
         "Write a genuinely useful blog post for everyday readers — clear, warm, and practical, not salesy.",
-        "LENGTH: The body must be a well-developed article of 300–400 words. Use 3–5 short sections (each with a ## heading) and include at least one bullet list where it fits naturally. Do not pad with fluff.",
+        "LENGTH: The body must be a thorough, in-depth article of 700–900 words. Use 5–7 short sections (each with a ## heading) and include at least one bullet list where it fits naturally. Cover the topic comprehensively with genuinely useful detail — do not pad with fluff or repeat yourself.",
         "STRICT BODY FORMAT (the site renderer only understands this):",
         "- Separate paragraphs with a blank line.",
         '- A line starting with "## " is a section heading.',
@@ -546,7 +546,7 @@ export const generateBlogPost = createServerFn({ method: "POST" })
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           response_format: { type: "json_object" },
-          max_tokens: 1200,
+          max_tokens: 2400,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
