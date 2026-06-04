@@ -90,18 +90,20 @@ function BlogPostPage() {
         {/* Header */}
         <header className="bg-surface border-b border-gray-100 py-14 lg:py-16">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Link
-              to="/blog"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-500 hover:text-primary-600 transition-colors mb-6"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              All articles
-            </Link>
-            {post.category && (
-              <span className="inline-block text-xs font-semibold text-primary-500 bg-cream px-3 py-1 rounded-full mb-4">
-                {post.category}
-              </span>
-            )}
+            <div className="flex items-center gap-5 mb-6">
+              <Link
+                to="/blog"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-500 hover:text-primary-600 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                All articles
+              </Link>
+              {post.category && (
+                <span className="inline-flex items-center rounded-full bg-cream px-4 py-1.5 text-sm font-semibold text-primary-600 ring-1 ring-primary-100">
+                  {post.category}
+                </span>
+              )}
+            </div>
             <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-text-primary leading-tight mb-5">
               {post.title}
             </h1>
