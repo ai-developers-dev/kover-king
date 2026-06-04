@@ -210,19 +210,26 @@ function BlogPostPage() {
                   {post.readMinutes} min read
                 </span>
               )}
-              {post.author && (
-                <span className="flex items-center gap-2">
-                  {post.authorPhotoUrl && (
-                    <img
-                      src={post.authorPhotoUrl}
-                      alt={post.author}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                  )}
-                  By {post.author}
-                </span>
-              )}
             </div>
+            {post.author && (
+              <div className="mt-6 flex items-center gap-4">
+                {post.authorPhotoUrl && (
+                  <img
+                    src={post.authorPhotoUrl}
+                    alt={post.author}
+                    className="w-16 h-16 rounded-full object-cover ring-2 ring-primary-100 shadow-sm"
+                  />
+                )}
+                <div className="leading-tight">
+                  <div className="text-xs uppercase tracking-wide text-text-muted">
+                    Written by
+                  </div>
+                  <div className="text-base font-semibold text-text-primary">
+                    {post.author}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 
