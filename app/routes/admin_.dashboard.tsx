@@ -19,6 +19,12 @@ import {
   getKeywordIdeas,
   updateKeywordIdeaStatus,
   runKeywordIdeasNow,
+  getOutreach,
+  scanOutreachTargets,
+  findOutreachEmail,
+  draftOutreach,
+  updateOutreach,
+  sendOutreach,
 } from "~/lib/actions";
 import { slugify } from "~/content/blog";
 import {
@@ -44,6 +50,9 @@ import {
   Users,
   Upload,
   Lightbulb,
+  Link2,
+  Mail,
+  Search,
 } from "lucide-react";
 
 function getToken(): string {
@@ -142,7 +151,7 @@ export const Route = createFileRoute("/admin_/dashboard")({
   component: DashboardPage,
 });
 
-type Tab = "quotes" | "contacts" | "blog" | "authors" | "ideas";
+type Tab = "quotes" | "contacts" | "blog" | "authors" | "ideas" | "outreach";
 
 const insuranceIcon: Record<string, typeof Car> = {
   Auto: Car,
@@ -178,6 +187,10 @@ function DashboardPage() {
   const [ideas, setIdeas] = useState<any[]>([]);
   const [ideasGenerating, setIdeasGenerating] = useState(false);
   const [ideasMsg, setIdeasMsg] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [outreach, setOutreach] = useState<any[]>([]);
+  const [outreachBusy, setOutreachBusy] = useState(false);
+  const [outreachMsg, setOutreachMsg] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -194,18 +207,20 @@ function DashboardPage() {
     setLoading(true);
     const token = getToken();
     try {
-      const [q, c, p, a, ki] = await Promise.all([
+      const [q, c, p, a, ki, o] = await Promise.all([
         getQuotes({ data: { token } }),
         getContacts({ data: { token } }),
         getBlogPostsAdmin({ data: { token } }),
         getAuthorsAdmin({ data: { token } }),
         getKeywordIdeas({ data: { token } }),
+        getOutreach({ data: { token } }),
       ]);
       setQuotes(q as any[]);
       setContacts(c as any[]);
       setPosts(p as any[]);
       setAuthors(a as any[]);
       setIdeas(ki as any[]);
+      setOutreach(o as any[]);
     } catch {
       // A failure here usually means the session expired — send back to login.
       sessionStorage.removeItem("admin-token");
@@ -296,6 +311,83 @@ function DashboardPage() {
   const dismissIdea = async (id: number) => {
     setIdeas((prev) => prev.map((x) => (x.id === id ? { ...x, status: "dismissed" } : x)));
     await updateKeywordIdeaStatus({ data: { token: getToken(), id, status: "dismissed" } }).catch(() => {});
+  };
+
+  // ── Outreach handlers ──
+  const handleScanOutreach = async () => {
+    setOutreachMsg("");
+    setOutreachBusy(true);
+    try {
+      const res = await scanOutreachTargets({ data: { token: getToken() } });
+      setOutreachMsg(res.success ? `Added ${res.added} new target(s).` : "Scan failed.");
+      await loadData();
+    } catch {
+      setOutreachMsg("Scan failed. Your session may have expired.");
+    }
+    setOutreachBusy(false);
+  };
+
+  // Find emails for every target that doesn't have one yet (sequential to
+  // respect per-request limits).
+  const handleFindEmails = async () => {
+    setOutreachMsg("");
+    setOutreachBusy(true);
+    const targets = outreach.filter((o) => !o.email && o.status !== "no_email");
+    let found = 0;
+    for (const t of targets) {
+      try {
+        const res = await findOutreachEmail({ data: { token: getToken(), id: Number(t.id) } });
+        if (res.success && res.email) found++;
+      } catch {
+        /* keep going */
+      }
+    }
+    setOutreachMsg(`Searched ${targets.length} site(s); found ${found} email(s).`);
+    await loadData();
+    setOutreachBusy(false);
+  };
+
+  const handleFindOneEmail = async (id: number) => {
+    try {
+      await findOutreachEmail({ data: { token: getToken(), id } });
+      await loadData();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleDraftOutreach = async (id: number) => {
+    try {
+      await draftOutreach({ data: { token: getToken(), id } });
+      await loadData();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSaveOutreach = async (
+    id: number,
+    patch: { email?: string; draftSubject?: string; draftBody?: string; status?: string }
+  ) => {
+    await updateOutreach({ data: { token: getToken(), id, ...patch } }).catch(() => {});
+    await loadData();
+  };
+
+  const handleSendOutreach = async (id: number, email: string) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Send this outreach email to ${email}? This sends a real email.`)
+    ) {
+      return;
+    }
+    setOutreachMsg("");
+    try {
+      const res = await sendOutreach({ data: { token: getToken(), id } });
+      setOutreachMsg(res.success ? `Sent to ${email}.` : res.error || "Send failed.");
+    } catch {
+      setOutreachMsg("Send failed. Your session may have expired.");
+    }
+    await loadData();
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -681,6 +773,17 @@ function DashboardPage() {
             <Lightbulb className="w-4 h-4" />
             Keyword Ideas
           </button>
+          <button
+            onClick={() => setTab("outreach")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              tab === "outreach"
+                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <Link2 className="w-4 h-4" />
+            Outreach ({outreach.length})
+          </button>
         </div>
 
         {/* Content */}
@@ -731,6 +834,18 @@ function DashboardPage() {
             onUse={usePostIdea}
             onDismiss={dismissIdea}
             formatDate={formatDate}
+          />
+        ) : tab === "outreach" ? (
+          <OutreachPanel
+            outreach={outreach}
+            busy={outreachBusy}
+            message={outreachMsg}
+            onScan={handleScanOutreach}
+            onFindAll={handleFindEmails}
+            onFindOne={handleFindOneEmail}
+            onDraft={handleDraftOutreach}
+            onSave={handleSaveOutreach}
+            onSend={handleSendOutreach}
           />
         ) : tab === "quotes" ? (
           <div className="space-y-3">
@@ -1826,6 +1941,273 @@ function IdeasPanel({
               </div>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Outreach panel ──────────────────────────────────────────────────────────
+
+const OUTREACH_STATUS_LABEL: Record<string, string> = {
+  found: "Needs email",
+  email_found: "Email found",
+  no_email: "No email",
+  drafted: "Draft ready",
+  sent: "Sent",
+  skipped: "Skipped",
+  unsubscribed: "Unsubscribed",
+};
+
+function OutreachPanel({
+  outreach,
+  busy,
+  message,
+  onScan,
+  onFindAll,
+  onFindOne,
+  onDraft,
+  onSave,
+  onSend,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  outreach: any[];
+  busy: boolean;
+  message: string;
+  onScan: () => void;
+  onFindAll: () => void;
+  onFindOne: (id: number) => void;
+  onDraft: (id: number) => void;
+  onSave: (
+    id: number,
+    patch: { email?: string; draftSubject?: string; draftBody?: string; status?: string }
+  ) => void;
+  onSend: (id: number, email: string) => void;
+}) {
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editEmail, setEditEmail] = useState("");
+  const [editSubject, setEditSubject] = useState("");
+  const [editBody, setEditBody] = useState("");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const startEdit = (o: any) => {
+    setEditId(Number(o.id));
+    setEditEmail(String(o.email || ""));
+    setEditSubject(String(o.draft_subject || ""));
+    setEditBody(String(o.draft_body || ""));
+  };
+  const saveEdit = () => {
+    if (editId == null) return;
+    onSave(editId, {
+      email: editEmail,
+      draftSubject: editSubject,
+      draftBody: editBody,
+    });
+    setEditId(null);
+  };
+
+  return (
+    <div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
+            <Link2 className="w-5 h-5 text-primary-500" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-heading text-lg font-bold text-text-primary">
+              Backlink Outreach
+            </h2>
+            <p className="text-sm text-text-secondary mt-1">
+              Scan the sites you cite as Sources, find a contact email, then review
+              and send a friendly link-request. Every email is sent only when you
+              click Send — nothing goes out automatically.
+            </p>
+            {message && (
+              <p className="text-sm text-primary-600 mt-2 font-medium">{message}</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 shrink-0">
+            <button
+              onClick={onScan}
+              disabled={busy}
+              className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${busy ? "animate-spin" : ""}`} />
+              Scan cited sites
+            </button>
+            <button
+              onClick={onFindAll}
+              disabled={busy}
+              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-60 text-text-primary font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              Find emails
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {outreach.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <Link2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-text-muted">
+            No targets yet. Click “Scan cited sites” to pull domains from your blog
+            sources.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {outreach.map((o) => {
+            const id = Number(o.id);
+            const status = String(o.status);
+            const isEditing = editId === id;
+            return (
+              <div
+                key={id}
+                className="bg-white rounded-2xl border border-gray-100 px-5 py-4"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-text-primary text-sm">
+                        {String(o.domain)}
+                      </span>
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          status === "sent"
+                            ? "text-green-700 bg-green-50"
+                            : status === "no_email"
+                              ? "text-amber-700 bg-amber-50"
+                              : "text-text-secondary bg-gray-100"
+                        }`}
+                      >
+                        {OUTREACH_STATUS_LABEL[status] || status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-muted truncate mt-1">
+                      Cited in: {String(o.post_title || o.post_slug || "—")}
+                    </p>
+                    {o.email && (
+                      <p className="text-sm text-text-primary mt-1 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-primary-500" />
+                        {String(o.email)}
+                      </p>
+                    )}
+                    {o.error && (
+                      <p className="text-xs text-red-500 mt-1">Error: {String(o.error)}</p>
+                    )}
+                  </div>
+                  {!isEditing && status !== "sent" && (
+                    <div className="flex flex-col gap-2 shrink-0">
+                      {!o.email && (
+                        <button
+                          onClick={() => onFindOne(id)}
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-text-primary px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          <Search className="w-3.5 h-3.5" />
+                          Find email
+                        </button>
+                      )}
+                      {!o.draft_subject ? (
+                        <button
+                          onClick={() => onDraft(id)}
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-text-primary px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Draft
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => startEdit(o)}
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-text-primary px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Edit
+                        </button>
+                      )}
+                      {o.email && o.draft_subject && (
+                        <button
+                          onClick={() => onSend(id, String(o.email))}
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-primary-500 hover:bg-primary-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          Send
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {status === "sent" && o.sent_at && (
+                    <span className="text-xs text-text-muted shrink-0">
+                      Sent {String(o.sent_at).slice(0, 10)}
+                    </span>
+                  )}
+                </div>
+
+                {isEditing && (
+                  <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        placeholder="contact@example.com"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">
+                        Subject
+                      </label>
+                      <input
+                        type="text"
+                        value={editSubject}
+                        onChange={(e) => setEditSubject(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-text-primary mb-1">
+                        Body
+                      </label>
+                      <textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        rows={12}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={saveEdit}
+                        className="flex items-center gap-1.5 text-xs font-semibold bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditId(null)}
+                        className="text-xs font-semibold text-text-secondary hover:text-text-primary bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          onSave(id, { status: "skipped" });
+                          setEditId(null);
+                        }}
+                        className="ml-auto text-xs font-semibold text-text-muted hover:text-text-primary px-3 py-2 rounded-lg transition-colors"
+                      >
+                        Skip this site
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

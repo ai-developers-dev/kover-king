@@ -415,6 +415,162 @@ export const runKeywordIdeasNow = createServerFn({ method: "POST" })
     }
   );
 
+// ─── Backlink outreach (auth required) ───────────────────────────────────────
+
+export const getOutreach = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  // @ts-ignore - TanStack Start SSR register type mismatch
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    const result = await db.execute(
+      "SELECT id, domain, source_url, source_title, post_slug, post_title, email, status, draft_subject, draft_body, sent_at, error FROM outreach ORDER BY (status='sent'), updated_at DESC, id DESC LIMIT 200"
+    );
+    return result.rows;
+  });
+
+// Scan every published post's citations and add any new domains as targets.
+export const scanOutreachTargets = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    const posts = await db.execute(
+      "SELECT slug, title, citations FROM blog_posts WHERE citations IS NOT NULL"
+    );
+    const existing = await db.execute("SELECT domain FROM outreach");
+    const known = new Set(existing.rows.map((r) => String(r.domain)));
+    let added = 0;
+    for (const p of posts.rows) {
+      let cites: { title?: string; url?: string }[] = [];
+      try {
+        cites = JSON.parse(String(p.citations));
+      } catch {
+        continue;
+      }
+      if (!Array.isArray(cites)) continue;
+      for (const c of cites) {
+        if (!c?.url) continue;
+        let domain = "";
+        try {
+          domain = new URL(c.url).hostname.replace(/^www\./, "");
+        } catch {
+          continue;
+        }
+        if (!domain || known.has(domain)) continue;
+        known.add(domain);
+        await db.execute({
+          sql: "INSERT OR IGNORE INTO outreach (domain, source_url, source_title, post_slug, post_title, status) VALUES (?, ?, ?, ?, ?, 'found')",
+          args: [domain, c.url, c.title || domain, String(p.slug), String(p.title)],
+        });
+        added++;
+      }
+    }
+    return { success: true as const, added };
+  });
+
+export const findOutreachEmail = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; id: number }) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    const row = await db.execute({
+      sql: "SELECT domain FROM outreach WHERE id = ? LIMIT 1",
+      args: [data.id],
+    });
+    if (!row.rows[0]) return { success: false as const, error: "Not found" };
+    const { discoverEmail } = await import("./outreach-agent");
+    const email = await discoverEmail(String(row.rows[0].domain));
+    await db.execute({
+      sql: "UPDATE outreach SET email = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [email, email ? "email_found" : "no_email", data.id],
+    });
+    return { success: true as const, email };
+  });
+
+export const draftOutreach = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; id: number }) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    const row = await db.execute({
+      sql: "SELECT domain, source_url, source_title, post_slug, post_title FROM outreach WHERE id = ? LIMIT 1",
+      args: [data.id],
+    });
+    const r = row.rows[0];
+    if (!r) return { success: false as const, error: "Not found" };
+    const { buildOutreachDraft } = await import("./outreach-agent");
+    const draft = buildOutreachDraft({
+      siteTitle: String(r.source_title || r.domain),
+      sourceUrl: String(r.source_url || ""),
+      postSlug: String(r.post_slug || ""),
+      postTitle: String(r.post_title || ""),
+    });
+    await db.execute({
+      sql: "UPDATE outreach SET draft_subject = ?, draft_body = ?, status = CASE WHEN status='sent' THEN status ELSE 'drafted' END, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [draft.subject, draft.body, data.id],
+    });
+    return { success: true as const, ...draft };
+  });
+
+export const updateOutreach = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      token: string;
+      id: number;
+      email?: string;
+      draftSubject?: string;
+      draftBody?: string;
+      status?: string;
+    }) => data
+  )
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    await db.execute({
+      sql: "UPDATE outreach SET email = COALESCE(?, email), draft_subject = COALESCE(?, draft_subject), draft_body = COALESCE(?, draft_body), status = COALESCE(?, status), updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [
+        data.email ?? null,
+        data.draftSubject ?? null,
+        data.draftBody ?? null,
+        data.status ?? null,
+        data.id,
+      ],
+    });
+    return { success: true as const };
+  });
+
+export const sendOutreach = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; id: number }) => data)
+  .handler(
+    async ({
+      data,
+    }): Promise<{ success: true } | { success: false; error: string }> => {
+      await assertSession(data.token);
+      const row = await db.execute({
+        sql: "SELECT email, draft_subject, draft_body, status FROM outreach WHERE id = ? LIMIT 1",
+        args: [data.id],
+      });
+      const r = row.rows[0];
+      if (!r) return { success: false, error: "Not found" };
+      if (r.status === "sent") return { success: false, error: "Already sent" };
+      const email = String(r.email || "");
+      const subject = String(r.draft_subject || "");
+      const body = String(r.draft_body || "");
+      if (!email) return { success: false, error: "No email address on this target." };
+      if (!subject || !body) return { success: false, error: "Draft the email first." };
+      const { sendOutreachEmail } = await import("./outreach-agent");
+      const { sent, error } = await sendOutreachEmail({ to: email, subject, body });
+      if (!sent) {
+        await db.execute({
+          sql: "UPDATE outreach SET error = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+          args: [error || "send failed", data.id],
+        });
+        return { success: false, error: error || "Send failed" };
+      }
+      await db.execute({
+        sql: "UPDATE outreach SET status = 'sent', sent_at = CURRENT_TIMESTAMP, error = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        args: [data.id],
+      });
+      return { success: true };
+    }
+  );
+
 // ─── Authors: roster CRUD (auth required) ────────────────────────────────────
 
 type AuthorInput = {

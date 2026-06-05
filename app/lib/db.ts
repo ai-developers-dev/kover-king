@@ -46,6 +46,11 @@ export async function initDb() {
     await db.execute(
       "CREATE TABLE IF NOT EXISTS keyword_ideas (id INTEGER PRIMARY KEY AUTOINCREMENT, batch_date TEXT NOT NULL, rank INTEGER, keyword TEXT NOT NULL, title TEXT, rationale TEXT, intent TEXT, status TEXT NOT NULL DEFAULT 'new', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
     );
+    // Backlink outreach targets (the sites we cite as Sources). One row per
+    // domain (UNIQUE) so we never email the same site twice.
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS outreach (id INTEGER PRIMARY KEY AUTOINCREMENT, domain TEXT UNIQUE NOT NULL, source_url TEXT, source_title TEXT, post_slug TEXT, post_title TEXT, email TEXT, status TEXT NOT NULL DEFAULT 'found', draft_subject TEXT, draft_body TEXT, sent_at DATETIME, error TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
     // blog_posts predates author records — add the new columns if missing.
     // ALTER ... ADD COLUMN throws "duplicate column" if already present, so
     // each is wrapped to stay idempotent across restarts/deploys.
