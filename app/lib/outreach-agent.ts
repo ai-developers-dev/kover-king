@@ -143,6 +143,57 @@ function draftToHtml(body: string): string {
   )}</div>`;
 }
 
+/**
+ * Notify the agency of a new lead (quote/contact submission). Best-effort and
+ * fire-and-forget — never blocks or fails the user's form submission. Sends to
+ * EMAIL_TO (or LEAD_NOTIFY_TO override) and sets reply_to to the lead's email
+ * so the team can reply straight from the notification.
+ */
+export async function sendLeadNotification(opts: {
+  kind: string; // e.g. "Quote request" | "Contact message"
+  fields: { label: string; value: string }[];
+  replyTo?: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  const from = process.env.EMAIL_FROM || "Kover King SEO <seo@koverking.com>";
+  const to = process.env.LEAD_NOTIFY_TO || process.env.EMAIL_TO || "doug@aideveloper.dev";
+  const rows = opts.fields
+    .filter((f) => f.value && f.value.trim())
+    .map(
+      (f) =>
+        `<tr><td style="padding:6px 12px;color:#737373;font-size:13px;white-space:nowrap;vertical-align:top;">${escapeHtml(
+          f.label
+        )}</td><td style="padding:6px 12px;color:#171717;font-size:14px;">${escapeHtml(
+          f.value
+        )}</td></tr>`
+    )
+    .join("");
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;">
+      <div style="background:#E9560C;color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;font-size:16px;font-weight:800;">
+        New ${escapeHtml(opts.kind)} · Kover King
+      </div>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #eee;border-top:none;border-radius:0 0 12px 12px;">
+        ${rows}
+      </table>
+      <p style="font-size:12px;color:#737373;margin-top:12px;">Submitted via koverking.com. Reply to this email to respond directly to the customer.</p>
+    </div>`;
+  try {
+    const { Resend } = await import("resend");
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from,
+      to,
+      replyTo: opts.replyTo || undefined,
+      subject: `New ${opts.kind} — ${opts.fields[0]?.value || "Kover King"}`,
+      html,
+    });
+  } catch {
+    // Never let a notification failure affect the submission.
+  }
+}
+
 /** Send one outreach email via Resend. Best-effort; returns a status. */
 export async function sendOutreachEmail(opts: {
   to: string;

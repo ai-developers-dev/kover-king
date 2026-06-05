@@ -41,6 +41,21 @@ export const submitContact = createServerFn({ method: "POST" })
       sql: "INSERT INTO contacts (name, email, phone, message) VALUES (?, ?, ?, ?)",
       args: [data.name, data.email, data.phone || null, data.message],
     });
+    try {
+      const { sendLeadNotification } = await import("./outreach-agent");
+      await sendLeadNotification({
+        kind: "Contact message",
+        replyTo: data.email,
+        fields: [
+          { label: "Name", value: data.name },
+          { label: "Email", value: data.email },
+          { label: "Phone", value: data.phone || "" },
+          { label: "Message", value: data.message },
+        ],
+      });
+    } catch {
+      /* notification is best-effort */
+    }
     return { success: true };
   });
 
@@ -76,6 +91,27 @@ export const submitQuote = createServerFn({ method: "POST" })
         data.details || null,
       ],
     });
+    try {
+      const { sendLeadNotification } = await import("./outreach-agent");
+      await sendLeadNotification({
+        kind: "Quote request",
+        replyTo: data.email,
+        fields: [
+          { label: "Name", value: `${data.first_name} ${data.last_name}`.trim() },
+          { label: "Email", value: data.email },
+          { label: "Phone", value: data.phone },
+          { label: "Insurance", value: data.insurance_type },
+          { label: "Address", value: data.address || "" },
+          {
+            label: "City/State/ZIP",
+            value: [data.city, data.state, data.zip].filter(Boolean).join(", "),
+          },
+          { label: "Details", value: data.details || "" },
+        ],
+      });
+    } catch {
+      /* notification is best-effort */
+    }
     return { success: true };
   });
 
@@ -919,5 +955,20 @@ export const submitQuoteFromLead = createServerFn({ method: "POST" })
         details,
       ],
     });
+    try {
+      const { sendLeadNotification } = await import("./outreach-agent");
+      await sendLeadNotification({
+        kind: "Quote request (Meta Lead Ad)",
+        replyTo: data.email,
+        fields: [
+          { label: "Name", value: `${data.first_name} ${data.last_name}`.trim() },
+          { label: "Email", value: data.email },
+          { label: "Phone", value: data.phone },
+          { label: "Details", value: details },
+        ],
+      });
+    } catch {
+      /* notification is best-effort */
+    }
     return { success: true };
   });
