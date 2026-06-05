@@ -1,8 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Search, Home, Phone, ArrowLeft } from "lucide-react";
 import { QuoteDialog } from "~/components/quote-dialog";
 
+// Any unmatched URL throws notFound() so TanStack Start returns a real HTTP
+// 404 (not a "soft 404" that says Not Found but returns 200). The shared
+// notFoundComponent (configured on the router) renders the friendly page.
 export const Route = createFileRoute("/$")({
+  loader: () => {
+    throw notFound();
+  },
   head: () => ({
     meta: [
       { title: "Page Not Found | Kover King Insurance" },
@@ -10,6 +16,7 @@ export const Route = createFileRoute("/$")({
     ],
   }),
   component: NotFoundPage,
+  notFoundComponent: NotFoundPage,
 });
 
 function NotFoundPage() {
