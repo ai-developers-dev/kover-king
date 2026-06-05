@@ -345,6 +345,17 @@ export const createBlogPost = createServerFn({ method: "POST" })
           : null,
       ],
     });
+    if (data.published) {
+      try {
+        const { pingIndexNow } = await import("./indexnow");
+        await pingIndexNow([
+          `https://koverking.com/blog/${data.slug}`,
+          "https://koverking.com/blog",
+        ]);
+      } catch {
+        /* best-effort */
+      }
+    }
     return { success: true as const };
   });
 
@@ -387,6 +398,17 @@ export const updateBlogPost = createServerFn({ method: "POST" })
         data.originalSlug,
       ],
     });
+    if (data.published) {
+      try {
+        const { pingIndexNow } = await import("./indexnow");
+        await pingIndexNow([
+          `https://koverking.com/blog/${data.slug}`,
+          "https://koverking.com/blog",
+        ]);
+      } catch {
+        /* best-effort */
+      }
+    }
     return { success: true as const };
   });
 
