@@ -928,6 +928,8 @@ function DashboardPage() {
             onBulkImages={handleBulkImages}
             imageBusy={imageBusy}
             bulkImageMsg={bulkImageMsg}
+            ideas={ideas}
+            onUseIdea={usePostIdea}
             updateForm={updateForm}
             formatDate={formatDate}
           />
@@ -1256,6 +1258,8 @@ function BlogPanel({
   onBulkImages,
   imageBusy,
   bulkImageMsg,
+  ideas,
+  onUseIdea,
   updateForm,
   formatDate,
 }: {
@@ -1281,6 +1285,10 @@ function BlogPanel({
   onBulkImages: () => void;
   imageBusy: boolean;
   bulkImageMsg: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ideas: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onUseIdea: (idea: any) => void;
   updateForm: (patch: Partial<BlogFormState>) => void;
   formatDate: (d: unknown) => string;
 }) {
@@ -1682,8 +1690,52 @@ function BlogPanel({
     );
   }
 
+  // Latest unused keyword-idea suggestions (from the weekly email), shown
+  // right here so they can become posts in one click.
+  const suggestions = (() => {
+    const fresh = (ideas || []).filter((i) => String(i.status) === "new");
+    if (fresh.length === 0) return [];
+    const latest = String(fresh[0].batch_date);
+    return fresh.filter((i) => String(i.batch_date) === latest).slice(0, 5);
+  })();
+
   return (
     <div>
+      {suggestions.length > 0 && (
+        <div className="bg-cream/60 border border-primary-100 rounded-2xl p-5 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb className="w-4 h-4 text-primary-500" />
+            <h3 className="font-heading text-sm font-bold text-text-primary">
+              Suggested posts from this week's SEO research
+            </h3>
+          </div>
+          <div className="space-y-2">
+            {suggestions.map((idea) => (
+              <div
+                key={String(idea.id)}
+                className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 px-4 py-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-text-primary truncate">
+                    {String(idea.title || idea.keyword)}
+                  </p>
+                  <p className="text-xs text-text-muted truncate">
+                    {String(idea.keyword)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onUseIdea(idea)}
+                  className="flex items-center gap-1.5 text-xs font-semibold bg-primary-500 hover:bg-primary-600 text-white px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Create post
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <p className="text-sm text-text-muted">
           {posts.length} {posts.length === 1 ? "post" : "posts"}
