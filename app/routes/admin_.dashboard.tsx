@@ -10,6 +10,7 @@ import {
   createBlogPost,
   updateBlogPost,
   deleteBlogPost,
+  shareToFacebook,
   generateBlogPost,
   getAuthorsAdmin,
   createAuthor,
@@ -50,6 +51,7 @@ import {
   Save,
   X,
   Sparkles,
+  Share2,
   Users,
   Upload,
   Lightbulb,
@@ -551,6 +553,35 @@ function DashboardPage() {
     setPosts((prev) => prev.filter((p) => p.slug !== slug));
   };
 
+  const handleShareFacebook = async (slug: string, title: string, alreadyShared: boolean) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        alreadyShared
+          ? `"${title}" was already shared. Post it to your Facebook Page again?`
+          : `Post "${title}" to your Facebook Page?`
+      )
+    ) {
+      return;
+    }
+    setBulkImageMsg("");
+    try {
+      const res = await shareToFacebook({ data: { token: getToken(), slug } });
+      if (res.success) {
+        setBulkImageMsg("Shared to Facebook.");
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.slug === slug ? { ...p, facebook_post_id: res.postId } : p
+          )
+        );
+      } else {
+        setBulkImageMsg(`Facebook: ${res.error}`);
+      }
+    } catch {
+      setBulkImageMsg("Facebook share failed. Your session may have expired.");
+    }
+  };
+
   // ── Featured image handlers ──
   const handleGenerateImage = async () => {
     if (!blogForm) return;
@@ -920,6 +951,7 @@ function DashboardPage() {
             onNew={startNewPost}
             onEdit={startEditPost}
             onDelete={handleDeletePost}
+            onShareFacebook={handleShareFacebook}
             onCancel={cancelBlogForm}
             onSave={handleSaveBlog}
             onGenerate={handleGenerate}
@@ -1250,6 +1282,7 @@ function BlogPanel({
   onNew,
   onEdit,
   onDelete,
+  onShareFacebook,
   onCancel,
   onSave,
   onGenerate,
@@ -1277,6 +1310,7 @@ function BlogPanel({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onEdit: (p: any) => void;
   onDelete: (slug: string) => void;
+  onShareFacebook: (slug: string, title: string, alreadyShared: boolean) => void;
   onCancel: () => void;
   onSave: () => void;
   onGenerate: () => void;
@@ -1791,6 +1825,11 @@ function BlogPanel({
                       Draft
                     </span>
                   )}
+                  {p.facebook_post_id && (
+                    <span className="ml-2 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                      Shared on FB
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-text-muted truncate">
                   /blog/{String(p.slug)} · {formatDate(p.date_published)}
@@ -1805,6 +1844,18 @@ function BlogPanel({
                 >
                   View
                 </a>
+              )}
+              {Number(p.published) === 1 && (
+                <button
+                  onClick={() =>
+                    onShareFacebook(String(p.slug), String(p.title), !!p.facebook_post_id)
+                  }
+                  className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-white hover:bg-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                  title="Post to Facebook Page"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  {p.facebook_post_id ? "Re-share" : "Facebook"}
+                </button>
               )}
               <button
                 onClick={() => onEdit(p)}

@@ -70,6 +70,9 @@ export async function initDb() {
       "ALTER TABLE blog_posts ADD COLUMN featured_image_width INTEGER",
       "ALTER TABLE blog_posts ADD COLUMN featured_image_height INTEGER",
       "ALTER TABLE blog_posts ADD COLUMN featured_image_credit TEXT",
+      // "Send to Facebook" tracking: the Graph post id + when it was shared.
+      "ALTER TABLE blog_posts ADD COLUMN facebook_post_id TEXT",
+      "ALTER TABLE blog_posts ADD COLUMN facebook_posted_at DATETIME",
     ]) {
       try {
         await db.execute(col);

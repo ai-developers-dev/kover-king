@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db, initDb } from "~/lib/db";
-import { SITE_PAGES, BLOG_CATEGORIES } from "~/lib/seo";
+import { SITE_PAGES, BLOG_CATEGORIES, SITE_URL } from "~/lib/seo";
 
 type Citation = { title: string; url: string };
 
@@ -309,7 +309,7 @@ export const getBlogPostsAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertSession(data.token);
     const result = await db.execute(
-      "SELECT id, slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations, featured_image_url, featured_image_alt, featured_image_width, featured_image_height, featured_image_credit FROM blog_posts ORDER BY date_published DESC, id DESC"
+      "SELECT id, slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations, featured_image_url, featured_image_alt, featured_image_width, featured_image_height, featured_image_credit, facebook_post_id, facebook_posted_at FROM blog_posts ORDER BY date_published DESC, id DESC"
     );
     return result.rows;
   });
@@ -437,6 +437,40 @@ export const deleteBlogPost = createServerFn({ method: "POST" })
     });
     return { success: true as const };
   });
+
+// Share a published post to the Facebook Page as a link card.
+export const shareToFacebook = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; slug: string }) => data)
+  .handler(
+    async ({
+      data,
+    }): Promise<{ success: true; postId: string } | { success: false; error: string }> => {
+      await assertSession(data.token);
+      const row = await db.execute({
+        sql: "SELECT title, description, published FROM blog_posts WHERE slug = ? LIMIT 1",
+        args: [data.slug],
+      });
+      const r = row.rows[0];
+      if (!r) return { success: false, error: "Post not found." };
+      if (Number(r.published) !== 1) {
+        return { success: false, error: "Publish the post before sharing it." };
+      }
+      const title = String(r.title);
+      const description = String(r.description || "");
+      const link = `${SITE_URL}/blog/${data.slug}`;
+      const message = description ? `${title}\n\n${description}` : title;
+
+      const { postToFacebook } = await import("./facebook");
+      const result = await postToFacebook({ message, link });
+      if (!result.ok) return { success: false, error: result.error };
+
+      await db.execute({
+        sql: "UPDATE blog_posts SET facebook_post_id = ?, facebook_posted_at = CURRENT_TIMESTAMP WHERE slug = ?",
+        args: [result.postId, data.slug],
+      });
+      return { success: true, postId: result.postId };
+    }
+  );
 
 // ─── Blog featured images (auth required) ────────────────────────────────────
 
