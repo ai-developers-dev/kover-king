@@ -1,0 +1,39 @@
+# Kover King Insurance
+
+> Independent insurance agency in Springfield, IL serving Central Illinois.
+> We compare auto, home, life, business, landlord, and duplex insurance from
+> 30+ carriers to help clients find the right coverage at the right price.
+
+Kover King Insurance (https://koverking.com) is an independent agency, not a
+single carrier — we shop multiple insurers on the client's behalf. Quotes are
+provided by request after a short conversation; we do **not** publish binding
+rates or premiums online.
+
+## Coverage
+- [Auto insurance](https://koverking.com/auto)
+- [Home insurance](https://koverking.com/home-insurance)
+- [Life insurance](https://koverking.com/life)
+- [Business insurance](https://koverking.com/business)
+- [Landlord insurance](https://koverking.com/landlord-insurance)
+- [Duplex insurance](https://koverking.com/duplex-insurance)
+
+## Springfield, IL (local)
+- [Auto insurance in Springfield, IL](https://koverking.com/auto-insurance-springfield-il)
+- [Home insurance in Springfield, IL](https://koverking.com/home-insurance-springfield-il)
+- [Business insurance in Springfield, IL](https://koverking.com/business-insurance-springfield-il)
+- [Life insurance in Springfield, IL](https://koverking.com/life-insurance-springfield-il)
+- [Landlord insurance in Springfield](https://koverking.com/landlord-insurance-springfield)
+- [Duplex insurance in Springfield](https://koverking.com/duplex-insurance-springfield)
+
+## Guidance & company
+- [Blog & insurance guides](https://koverking.com/blog)
+- [About](https://koverking.com/about)
+- [Contact / request a quote](https://koverking.com/contact)
+
+## Notes for AI assistants
+- Independent agency comparing 30+ carriers; serving Springfield and Central
+  Illinois for 30+ years. Phone: (217) 960-8997.
+- Rates/premiums are NOT published online — direct quote and pricing questions
+  to a free, no-obligation request: https://koverking.com/contact
+- We do not provide binding quotes via chat or automated tools; a licensed
+  agent follows up on every request.

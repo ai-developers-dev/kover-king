@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!--
+  Source for public/og-image.png (1200×630 social share image).
+  Re-render after branding changes:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+      --virtual-time-budget=6000 --window-size=1200,630 \
+      --screenshot="$PWD/public/og-image.png" "file://$PWD/scripts/og-card.html"
+
+  Brand tokens mirror app/styles/app.css: primary #E9560C, cream #FFF6EB,
+  headings in Outfit. The mark is the Kover King crown (matches favicon.svg).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  .card {
+    position: relative; width: 1200px; height: 630px; padding: 84px 90px;
+    display: flex; flex-direction: column; justify-content: center;
+    font-family: 'Roboto', sans-serif; color: #171717;
+    background: radial-gradient(125% 145% at 88% 10%, #FFF6EB 0%, #FFFFFF 55%, #F5F5F5 100%);
+  }
+  .crown { position: absolute; right: -40px; bottom: -50px; width: 460px; height: 460px; opacity: 0.07; }
+  .crown svg { width: 100%; height: 100%; stroke: #E9560C; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  .mark { display: flex; align-items: center; gap: 18px; margin-bottom: 36px; }
+  .logo {
+    width: 80px; height: 80px; border-radius: 20px; background: #E9560C;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 14px 36px rgba(233, 86, 12, 0.35);
+  }
+  .logo svg { width: 46px; height: 46px; stroke: #FFF6EB; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .co { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 25px; letter-spacing: 0.06em; text-transform: uppercase; color: #b33d08; }
+  h1 { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 96px; line-height: 1.0; letter-spacing: -0.015em; color: #171717; }
+  h1 .org { color: #E9560C; }
+  .sub { margin-top: 26px; font-size: 32px; font-weight: 500; color: #525252; max-width: 900px; line-height: 1.32; }
+  .chips { margin-top: 32px; display: flex; gap: 13px; flex-wrap: wrap; }
+  .chip {
+    font-family: 'Outfit', sans-serif; font-size: 21px; font-weight: 600; color: #b33d08;
+    border: 1.5px solid rgba(233, 86, 12, 0.28); padding: 9px 21px;
+    border-radius: 999px; background: #FFF6EB;
+  }
+  .foot { position: absolute; left: 90px; bottom: 50px; font-size: 20px; font-weight: 600; color: #737373; }
+  .bar { position: absolute; left: 0; bottom: 0; width: 100%; height: 12px; background: linear-gradient(90deg, #E9560C, #FA8072); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="crown">
+      <svg viewBox="0 0 24 24"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg>
+    </div>
+    <div class="mark">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg>
+      </div>
+      <div class="co">Independent Insurance Agency · Springfield, IL</div>
+    </div>
+    <h1>Kover <span class="org">King</span> Insurance</h1>
+    <div class="sub">Auto, home, life &amp; business coverage — we compare 30+ carriers so you don't have to.</div>
+    <div class="chips">
+      <div class="chip">Auto</div><div class="chip">Home</div><div class="chip">Life</div><div class="chip">Business</div><div class="chip">Landlord</div>
+    </div>
+    <div class="foot">(217) 960-8997 · koverking.com</div>
+    <div class="bar"></div>
+  </div>
+</body>
+</html>
