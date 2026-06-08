@@ -13,6 +13,8 @@ type PostCard = {
   datePublished: string;
   author: string | null;
   authorPhotoUrl: string | null;
+  featuredImageUrl: string | null;
+  featuredImageAlt: string | null;
 };
 
 export const Route = createFileRoute("/blog/")({
@@ -28,6 +30,8 @@ export const Route = createFileRoute("/blog/")({
         datePublished: String(r.date_published),
         author: r.author ? String(r.author) : null,
         authorPhotoUrl: r.author_photo_url ? String(r.author_photo_url) : null,
+        featuredImageUrl: r.featured_image_url ? String(r.featured_image_url) : null,
+        featuredImageAlt: r.featured_image_alt ? String(r.featured_image_alt) : null,
       })),
     };
   },
@@ -90,6 +94,21 @@ function BlogIndexPage() {
                   key={post.slug}
                   className="group flex flex-col rounded-2xl border border-gray-100 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
+                  {post.featuredImageUrl && (
+                    <Link
+                      to="/blog/$slug"
+                      params={{ slug: post.slug }}
+                      className="block -mx-7 -mt-7 mb-5 overflow-hidden rounded-t-2xl"
+                    >
+                      <img
+                        src={post.featuredImageUrl}
+                        alt={post.featuredImageAlt || post.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full aspect-[16/9] object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    </Link>
+                  )}
                   {post.category && (
                     <span className="inline-block self-start text-xs font-semibold text-primary-500 bg-cream px-3 py-1 rounded-full mb-4">
                       {post.category}

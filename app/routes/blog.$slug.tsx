@@ -29,9 +29,14 @@ type LoadedPost = {
   keywords: string | null;
   citations: Citation[];
   blocks: BlogBlock[];
+  featuredImageUrl: string | null;
+  featuredImageAlt: string | null;
+  featuredImageWidth: number | null;
+  featuredImageHeight: number | null;
+  featuredImageCredit: string | null;
 };
 
-const FALLBACK_OG_IMAGE = `${SITE_URL}/favicon.svg`;
+const FALLBACK_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: async ({ params }): Promise<{ post: LoadedPost }> => {
@@ -65,6 +70,15 @@ export const Route = createFileRoute("/blog/$slug")({
         keywords: row.keywords ? String(row.keywords) : null,
         citations,
         blocks: parseBody(String(row.body ?? "")),
+        featuredImageUrl: row.featured_image_url ? String(row.featured_image_url) : null,
+        featuredImageAlt: row.featured_image_alt ? String(row.featured_image_alt) : null,
+        featuredImageWidth:
+          row.featured_image_width == null ? null : Number(row.featured_image_width),
+        featuredImageHeight:
+          row.featured_image_height == null ? null : Number(row.featured_image_height),
+        featuredImageCredit: row.featured_image_credit
+          ? String(row.featured_image_credit)
+          : null,
       },
     };
   },
@@ -75,7 +89,9 @@ export const Route = createFileRoute("/blog/$slug")({
     }
     const fullTitle = `${post.title} | Kover King`;
     const url = canonical(`/blog/${post.slug}`);
-    const image = post.authorPhotoUrl || FALLBACK_OG_IMAGE;
+    // Prefer the post's own featured image; fall back to the site OG card.
+    const image = post.featuredImageUrl || FALLBACK_OG_IMAGE;
+    const imageAlt = post.featuredImageAlt || post.title;
     return {
       meta: [
         { title: fullTitle },
@@ -87,6 +103,7 @@ export const Route = createFileRoute("/blog/$slug")({
         { property: "og:type", content: "article" },
         { property: "og:url", content: url },
         { property: "og:image", content: image },
+        { property: "og:image:alt", content: imageAlt },
         { property: "article:published_time", content: post.datePublished },
         ...(post.author
           ? [{ property: "article:author", content: post.author }]
@@ -99,6 +116,7 @@ export const Route = createFileRoute("/blog/$slug")({
         { name: "twitter:title", content: fullTitle },
         { name: "twitter:description", content: post.description },
         { name: "twitter:image", content: image },
+        { name: "twitter:image:alt", content: imageAlt },
       ],
       links: [{ rel: "canonical", href: url }],
     };
@@ -233,6 +251,30 @@ function BlogPostPage() {
           </div>
         </header>
 
+        {/* Featured image hero (LCP element — eager + high priority) */}
+        {post.featuredImageUrl && (
+          <figure className="bg-surface">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2">
+              <img
+                src={post.featuredImageUrl}
+                alt={post.featuredImageAlt || post.title}
+                width={post.featuredImageWidth || 1536}
+                height={post.featuredImageHeight || 1024}
+                loading="eager"
+                // @ts-expect-error fetchpriority is valid HTML but not yet in React's types
+                fetchpriority="high"
+                decoding="async"
+                className="w-full aspect-[16/9] object-cover rounded-2xl shadow-sm"
+              />
+              {post.featuredImageCredit && (
+                <figcaption className="mt-2 text-xs text-text-muted text-right">
+                  {post.featuredImageCredit}
+                </figcaption>
+              )}
+            </div>
+          </figure>
+        )}
+
         {/* Body */}
         <div className="py-12 lg:py-16">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -303,7 +345,7 @@ function BlogPostPage() {
               author: post.author,
               authorPhotoUrl: post.authorPhotoUrl,
               keywords: post.keywords,
-              image: post.authorPhotoUrl || FALLBACK_OG_IMAGE,
+              image: post.featuredImageUrl || FALLBACK_OG_IMAGE,
             }),
             breadcrumbSchema([
               { name: "Home", path: "/" },

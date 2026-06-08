@@ -63,6 +63,13 @@ export async function initDb() {
       "ALTER TABLE blog_posts ADD COLUMN focus_keyword TEXT",
       "ALTER TABLE blog_posts ADD COLUMN citations TEXT",
       "ALTER TABLE blog_posts ADD COLUMN related_page TEXT",
+      // Featured image (AI-generated or uploaded): public Blob URL, required
+      // alt text, dimensions for CLS-free <img>, and a credit line.
+      "ALTER TABLE blog_posts ADD COLUMN featured_image_url TEXT",
+      "ALTER TABLE blog_posts ADD COLUMN featured_image_alt TEXT",
+      "ALTER TABLE blog_posts ADD COLUMN featured_image_width INTEGER",
+      "ALTER TABLE blog_posts ADD COLUMN featured_image_height INTEGER",
+      "ALTER TABLE blog_posts ADD COLUMN featured_image_credit TEXT",
     ]) {
       try {
         await db.execute(col);

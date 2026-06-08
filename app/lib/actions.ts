@@ -194,7 +194,7 @@ export const getPublishedPosts = createServerFn({ method: "GET" })
   .handler(async () => {
     await initDb();
     const result = await db.execute(
-      "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published FROM blog_posts WHERE published = 1 ORDER BY date_published DESC, id DESC"
+      "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published, featured_image_url, featured_image_alt, featured_image_width, featured_image_height FROM blog_posts WHERE published = 1 ORDER BY date_published DESC, id DESC"
     );
     return result.rows;
   });
@@ -221,7 +221,7 @@ export const getPublishedPost = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     await initDb();
     const result = await db.execute({
-      sql: "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations FROM blog_posts WHERE slug = ? AND published = 1 LIMIT 1",
+      sql: "SELECT slug, title, description, category, author, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations, featured_image_url, featured_image_alt, featured_image_width, featured_image_height, featured_image_credit FROM blog_posts WHERE slug = ? AND published = 1 LIMIT 1",
       args: [data.slug],
     });
     return result.rows[0] ?? null;
@@ -246,6 +246,11 @@ type BlogInput = {
   keywords?: string;
   focusKeyword?: string;
   citations?: Citation[];
+  featuredImageUrl?: string | null;
+  featuredImageAlt?: string | null;
+  featuredImageWidth?: number | null;
+  featuredImageHeight?: number | null;
+  featuredImageCredit?: string | null;
 };
 
 // Resolve the author selection into a { name, photoUrl, id } snapshot stored
@@ -304,7 +309,7 @@ export const getBlogPostsAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertSession(data.token);
     const result = await db.execute(
-      "SELECT id, slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations FROM blog_posts ORDER BY date_published DESC, id DESC"
+      "SELECT id, slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, date_published, published, keywords, focus_keyword, citations, featured_image_url, featured_image_alt, featured_image_width, featured_image_height, featured_image_credit FROM blog_posts ORDER BY date_published DESC, id DESC"
     );
     return result.rows;
   });
@@ -325,7 +330,7 @@ export const createBlogPost = createServerFn({ method: "POST" })
     }
     const a = await resolveAuthor(data.authorId, data.author);
     await db.execute({
-      sql: "INSERT INTO blog_posts (slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, published, date_published, keywords, focus_keyword, citations) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      sql: "INSERT INTO blog_posts (slug, title, description, category, author, author_id, author_photo_url, read_minutes, body, published, date_published, keywords, focus_keyword, citations, featured_image_url, featured_image_alt, featured_image_width, featured_image_height, featured_image_credit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         data.slug,
         data.title,
@@ -343,6 +348,11 @@ export const createBlogPost = createServerFn({ method: "POST" })
         data.citations && data.citations.length
           ? JSON.stringify(data.citations)
           : null,
+        data.featuredImageUrl || null,
+        data.featuredImageAlt || null,
+        data.featuredImageWidth ?? null,
+        data.featuredImageHeight ?? null,
+        data.featuredImageCredit || null,
       ],
     });
     if (data.published) {
@@ -377,7 +387,7 @@ export const updateBlogPost = createServerFn({ method: "POST" })
     }
     const a = await resolveAuthor(data.authorId, data.author);
     await db.execute({
-      sql: "UPDATE blog_posts SET slug = ?, title = ?, description = ?, category = ?, author = ?, author_id = ?, author_photo_url = ?, read_minutes = ?, body = ?, published = ?, date_published = ?, keywords = ?, focus_keyword = ?, citations = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+      sql: "UPDATE blog_posts SET slug = ?, title = ?, description = ?, category = ?, author = ?, author_id = ?, author_photo_url = ?, read_minutes = ?, body = ?, published = ?, date_published = ?, keywords = ?, focus_keyword = ?, citations = ?, featured_image_url = ?, featured_image_alt = ?, featured_image_width = ?, featured_image_height = ?, featured_image_credit = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
       args: [
         data.slug,
         data.title,
@@ -395,6 +405,11 @@ export const updateBlogPost = createServerFn({ method: "POST" })
         data.citations && data.citations.length
           ? JSON.stringify(data.citations)
           : null,
+        data.featuredImageUrl || null,
+        data.featuredImageAlt || null,
+        data.featuredImageWidth ?? null,
+        data.featuredImageHeight ?? null,
+        data.featuredImageCredit || null,
         data.originalSlug,
       ],
     });
@@ -422,6 +437,134 @@ export const deleteBlogPost = createServerFn({ method: "POST" })
     });
     return { success: true as const };
   });
+
+// ─── Blog featured images (auth required) ────────────────────────────────────
+
+// Generate an AI featured image from the editor's current title + description.
+// Returns the image fields for the admin form to hold until save.
+export const generateFeaturedImage = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: { token: string; title: string; description?: string; slug?: string }) => data
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      | {
+          success: true;
+          url: string;
+          alt: string;
+          width: number;
+          height: number;
+          credit: string;
+        }
+      | { success: false; error: string }
+    > => {
+      await assertSession(data.token);
+      if (!process.env.OPENAI_API_KEY) {
+        return { success: false, error: "OPENAI_API_KEY is not configured." };
+      }
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        return {
+          success: false,
+          error: "Image storage isn't configured. Enable Vercel Blob (BLOB_READ_WRITE_TOKEN).",
+        };
+      }
+      try {
+        const { generateFeaturedImage: gen } = await import("./blog-image");
+        const img = await gen({
+          title: data.title,
+          description: data.description,
+          slug: data.slug || "post",
+        });
+        return { success: true, ...img };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return { success: false, error: `Image generation failed: ${msg}` };
+      }
+    }
+  );
+
+// Upload a user-provided featured image to Vercel Blob (path blog/...).
+export const uploadFeaturedImage = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      token: string;
+      filename: string;
+      contentType: string;
+      dataBase64: string;
+    }) => data
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{ success: true; url: string } | { success: false; error: string }> => {
+      await assertSession(data.token);
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        return {
+          success: false,
+          error: "Image storage isn't configured. Enable Vercel Blob (BLOB_READ_WRITE_TOKEN).",
+        };
+      }
+      if (!data.dataBase64) return { success: false, error: "No image data received." };
+      try {
+        const buffer = Buffer.from(data.dataBase64, "base64");
+        if (buffer.length > 8 * 1024 * 1024) {
+          return { success: false, error: "Image is too large (max 8MB)." };
+        }
+        const { put } = await import("@vercel/blob");
+        const safeName = (data.filename || "image").replace(/[^a-zA-Z0-9._-]/g, "_");
+        const blob = await put(`blog/${Date.now()}-${safeName}`, buffer, {
+          access: "public",
+          contentType: data.contentType || "image/jpeg",
+        });
+        return { success: true, url: blob.url };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        return { success: false, error: `Upload failed: ${msg}` };
+      }
+    }
+  );
+
+// Bulk: generate an AI image for every published post missing one.
+export const bulkGenerateMissingImages = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      | { success: true; generated: number; failed: number }
+      | { success: false; error: string }
+    > => {
+      await assertSession(data.token);
+      if (!process.env.OPENAI_API_KEY || !process.env.BLOB_READ_WRITE_TOKEN) {
+        return { success: false, error: "OpenAI and Vercel Blob must both be configured." };
+      }
+      const rows = await db.execute(
+        "SELECT slug, title, description FROM blog_posts WHERE featured_image_url IS NULL ORDER BY id DESC LIMIT 20"
+      );
+      const { generateFeaturedImage: gen } = await import("./blog-image");
+      let generated = 0;
+      let failed = 0;
+      for (const r of rows.rows) {
+        try {
+          const img = await gen({
+            title: String(r.title),
+            description: String(r.description || ""),
+            slug: String(r.slug),
+          });
+          await db.execute({
+            sql: "UPDATE blog_posts SET featured_image_url = ?, featured_image_alt = ?, featured_image_width = ?, featured_image_height = ?, featured_image_credit = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+            args: [img.url, img.alt, img.width, img.height, img.credit, String(r.slug)],
+          });
+          generated++;
+        } catch {
+          failed++;
+        }
+      }
+      return { success: true, generated, failed };
+    }
+  );
 
 // ─── Weekly SEO keyword ideas (auth required) ────────────────────────────────
 

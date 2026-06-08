@@ -16,6 +16,9 @@ import {
   updateAuthor,
   deleteAuthor,
   uploadAuthorPhoto,
+  generateFeaturedImage,
+  uploadFeaturedImage,
+  bulkGenerateMissingImages,
   getKeywordIdeas,
   updateKeywordIdeaStatus,
   runKeywordIdeasNow,
@@ -107,6 +110,12 @@ type BlogFormState = {
   keywords: string;
   // Sources as "Title | https://url" lines, one per line.
   sourcesText: string;
+  // Featured image
+  featuredImageUrl: string;
+  featuredImageAlt: string;
+  featuredImageWidth: number | null;
+  featuredImageHeight: number | null;
+  featuredImageCredit: string;
 };
 
 function emptyBlogForm(): BlogFormState {
@@ -126,6 +135,11 @@ function emptyBlogForm(): BlogFormState {
     focusKeyword: "",
     keywords: "",
     sourcesText: "",
+    featuredImageUrl: "",
+    featuredImageAlt: "",
+    featuredImageWidth: null,
+    featuredImageHeight: null,
+    featuredImageCredit: "",
   };
 }
 
@@ -174,6 +188,8 @@ function DashboardPage() {
   const [blogForm, setBlogForm] = useState<BlogFormState | null>(null);
   const [blogSaving, setBlogSaving] = useState(false);
   const [blogGenerating, setBlogGenerating] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [bulkImageMsg, setBulkImageMsg] = useState("");
   const [blogError, setBlogError] = useState("");
   // Whether the slug has been hand-edited (so we stop auto-deriving it).
   const [slugTouched, setSlugTouched] = useState(false);
@@ -409,6 +425,11 @@ function DashboardPage() {
       focusKeyword: p.focus_keyword ? String(p.focus_keyword) : "",
       keywords: p.keywords ? String(p.keywords) : "",
       sourcesText: citationsToText(p.citations),
+      featuredImageUrl: p.featured_image_url ? String(p.featured_image_url) : "",
+      featuredImageAlt: p.featured_image_alt ? String(p.featured_image_alt) : "",
+      featuredImageWidth: p.featured_image_width == null ? null : Number(p.featured_image_width),
+      featuredImageHeight: p.featured_image_height == null ? null : Number(p.featured_image_height),
+      featuredImageCredit: p.featured_image_credit ? String(p.featured_image_credit) : "",
     });
   };
 
@@ -472,6 +493,15 @@ function DashboardPage() {
       setBlogError("Please provide a URL (slug) for the post.");
       return;
     }
+    // Require alt text whenever a featured image is set (block publish only).
+    if (
+      blogForm.published &&
+      blogForm.featuredImageUrl &&
+      !blogForm.featuredImageAlt.trim()
+    ) {
+      setBlogError("Add alt text for the featured image before publishing.");
+      return;
+    }
     setBlogSaving(true);
     const authorId: number | "rotate" | null =
       blogForm.authorChoice === "rotate"
@@ -493,6 +523,11 @@ function DashboardPage() {
       focusKeyword: blogForm.focusKeyword.trim() || undefined,
       keywords: blogForm.keywords.trim() || undefined,
       citations: textToCitations(blogForm.sourcesText),
+      featuredImageUrl: blogForm.featuredImageUrl || null,
+      featuredImageAlt: blogForm.featuredImageAlt.trim() || null,
+      featuredImageWidth: blogForm.featuredImageWidth,
+      featuredImageHeight: blogForm.featuredImageHeight,
+      featuredImageCredit: blogForm.featuredImageCredit || null,
     };
     try {
       const result = blogForm.originalSlug
@@ -514,6 +549,87 @@ function DashboardPage() {
   const handleDeletePost = async (slug: string) => {
     await deleteBlogPost({ data: { token: getToken(), slug } });
     setPosts((prev) => prev.filter((p) => p.slug !== slug));
+  };
+
+  // ── Featured image handlers ──
+  const handleGenerateImage = async () => {
+    if (!blogForm) return;
+    if (!blogForm.title.trim()) {
+      setBlogError("Add a title first so the image can match the post.");
+      return;
+    }
+    setBlogError("");
+    setImageBusy(true);
+    try {
+      const res = await generateFeaturedImage({
+        data: {
+          token: getToken(),
+          title: blogForm.title,
+          description: blogForm.description,
+          slug: blogForm.slug || slugify(blogForm.title),
+        },
+      });
+      if (!res.success) {
+        setBlogError(res.error || "Image generation failed.");
+      } else {
+        updateForm({
+          featuredImageUrl: res.url,
+          featuredImageAlt: res.alt,
+          featuredImageWidth: res.width,
+          featuredImageHeight: res.height,
+          featuredImageCredit: res.credit,
+        });
+      }
+    } catch {
+      setBlogError("Image generation failed. Your session may have expired.");
+    }
+    setImageBusy(false);
+  };
+
+  const handleUploadImage = async (file: File) => {
+    setBlogError("");
+    setImageBusy(true);
+    try {
+      const dataBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || "").split(",")[1] ?? "");
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
+      const res = await uploadFeaturedImage({
+        data: { token: getToken(), filename: file.name, contentType: file.type, dataBase64 },
+      });
+      if (!res.success) {
+        setBlogError(res.error || "Upload failed.");
+      } else {
+        updateForm({
+          featuredImageUrl: res.url,
+          featuredImageWidth: null,
+          featuredImageHeight: null,
+          featuredImageCredit: "Uploaded",
+        });
+      }
+    } catch {
+      setBlogError("Upload failed.");
+    }
+    setImageBusy(false);
+  };
+
+  const handleBulkImages = async () => {
+    setBulkImageMsg("");
+    setImageBusy(true);
+    try {
+      const res = await bulkGenerateMissingImages({ data: { token: getToken() } });
+      setBulkImageMsg(
+        res.success
+          ? `Generated ${res.generated} image(s)${res.failed ? `, ${res.failed} failed` : ""}.`
+          : res.error || "Bulk generation failed."
+      );
+      await loadData();
+    } catch {
+      setBulkImageMsg("Bulk generation failed.");
+    }
+    setImageBusy(false);
   };
 
   // ── Author handlers ──
@@ -807,6 +923,11 @@ function DashboardPage() {
             onCancel={cancelBlogForm}
             onSave={handleSaveBlog}
             onGenerate={handleGenerate}
+            onGenerateImage={handleGenerateImage}
+            onUploadImage={handleUploadImage}
+            onBulkImages={handleBulkImages}
+            imageBusy={imageBusy}
+            bulkImageMsg={bulkImageMsg}
             updateForm={updateForm}
             formatDate={formatDate}
           />
@@ -1130,6 +1251,11 @@ function BlogPanel({
   onCancel,
   onSave,
   onGenerate,
+  onGenerateImage,
+  onUploadImage,
+  onBulkImages,
+  imageBusy,
+  bulkImageMsg,
   updateForm,
   formatDate,
 }: {
@@ -1150,6 +1276,11 @@ function BlogPanel({
   onCancel: () => void;
   onSave: () => void;
   onGenerate: () => void;
+  onGenerateImage: () => void;
+  onUploadImage: (file: File) => void;
+  onBulkImages: () => void;
+  imageBusy: boolean;
+  bulkImageMsg: string;
   updateForm: (patch: Partial<BlogFormState>) => void;
   formatDate: (d: unknown) => string;
 }) {
@@ -1419,6 +1550,93 @@ function BlogPanel({
             </div>
           </div>
 
+          {/* Featured image */}
+          <div className="border border-gray-200 rounded-xl p-4 bg-surface/50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-text-primary">
+                Featured image
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onGenerateImage}
+                  disabled={imageBusy}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {imageBusy ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  {form.featuredImageUrl ? "Regenerate" : "Generate with AI"}
+                </button>
+                <label className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-text-primary px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onUploadImage(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {form.featuredImageUrl ? (
+              <div className="space-y-3">
+                <img
+                  src={form.featuredImageUrl}
+                  alt={form.featuredImageAlt || "Featured image preview"}
+                  className="w-full aspect-[16/9] object-cover rounded-lg border border-gray-200"
+                />
+                <div>
+                  <label className="block text-xs font-semibold text-text-primary mb-1">
+                    Alt text <span className="text-red-500">*</span>{" "}
+                    <span className="font-normal text-text-muted">
+                      (required to publish)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.featuredImageAlt}
+                    onChange={(e) => updateForm({ featuredImageAlt: e.target.value })}
+                    placeholder="Describe the image for screen readers & SEO"
+                    className={fieldClass}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs text-text-muted">
+                  <span>{form.featuredImageCredit || ""}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateForm({
+                        featuredImageUrl: "",
+                        featuredImageAlt: "",
+                        featuredImageWidth: null,
+                        featuredImageHeight: null,
+                        featuredImageCredit: "",
+                      })
+                    }
+                    className="text-red-500 hover:text-red-700 font-semibold"
+                  >
+                    Remove image
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted">
+                No image yet. Generate one from the title + description, or upload
+                your own. Used as the post hero, blog-card thumbnail, and social
+                share image.
+              </p>
+            )}
+          </div>
+
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -1466,17 +1684,34 @@ function BlogPanel({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <p className="text-sm text-text-muted">
           {posts.length} {posts.length === 1 ? "post" : "posts"}
+          {bulkImageMsg && (
+            <span className="ml-3 text-primary-600 font-medium">{bulkImageMsg}</span>
+          )}
         </p>
-        <button
-          onClick={onNew}
-          className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-        >
-          <Plus className="w-4 h-4" />
-          New Post
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onBulkImages}
+            disabled={imageBusy}
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-60 text-text-primary font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
+          >
+            {imageBusy ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            Generate missing images
+          </button>
+          <button
+            onClick={onNew}
+            className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+          >
+            <Plus className="w-4 h-4" />
+            New Post
+          </button>
+        </div>
       </div>
 
       {posts.length === 0 ? (
