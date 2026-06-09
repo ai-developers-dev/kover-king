@@ -51,6 +51,11 @@ export async function initDb() {
     await db.execute(
       "CREATE TABLE IF NOT EXISTS outreach (id INTEGER PRIMARY KEY AUTOINCREMENT, domain TEXT UNIQUE NOT NULL, source_url TEXT, source_title TEXT, post_slug TEXT, post_title TEXT, email TEXT, status TEXT NOT NULL DEFAULT 'found', draft_subject TEXT, draft_body TEXT, sent_at DATETIME, error TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
     );
+    // Local-SEO directory listings (business citations). One row per directory
+    // URL (UNIQUE). status: not_started -> submitted -> live (or skipped).
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS directories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, url TEXT UNIQUE NOT NULL, category TEXT, notes TEXT, status TEXT NOT NULL DEFAULT 'not_started', listing_url TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
     // blog_posts predates author records — add the new columns if missing.
     // ALTER ... ADD COLUMN throws "duplicate column" if already present, so
     // each is wrapped to stay idempotent across restarts/deploys.

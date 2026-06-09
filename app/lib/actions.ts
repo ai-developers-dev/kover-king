@@ -472,6 +472,81 @@ export const shareToFacebook = createServerFn({ method: "POST" })
     }
   );
 
+// ─── Local-SEO directories (auth required) ───────────────────────────────────
+
+export const getDirectories = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  // @ts-ignore - TanStack Start SSR register type mismatch
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    const result = await db.execute(
+      "SELECT id, name, url, category, notes, status, listing_url FROM directories ORDER BY (status='live'), (status='submitted'), category, name LIMIT 300"
+    );
+    return result.rows;
+  });
+
+// Seed the known directories + AI-research more; insert any new ones.
+export const scanDirectories = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  .handler(
+    async ({
+      data,
+    }): Promise<{ success: true; added: number } | { success: false; error: string }> => {
+      await assertSession(data.token);
+      const { SEED_DIRECTORIES, researchDirectories } = await import("./directory-agent");
+      const researched = await researchDirectories();
+      const all = [...SEED_DIRECTORIES, ...researched];
+
+      const existing = await db.execute("SELECT url FROM directories");
+      const known = new Set(
+        existing.rows.map((r) => String(r.url).replace(/\/+$/, "").toLowerCase())
+      );
+      let added = 0;
+      for (const d of all) {
+        const key = d.url.replace(/\/+$/, "").toLowerCase();
+        if (known.has(key)) continue;
+        known.add(key);
+        try {
+          await db.execute({
+            sql: "INSERT OR IGNORE INTO directories (name, url, category, notes) VALUES (?, ?, ?, ?)",
+            args: [d.name, d.url, d.category || null, d.notes || null],
+          });
+          added++;
+        } catch {
+          /* skip dupes/bad rows */
+        }
+      }
+      return { success: true, added };
+    }
+  );
+
+export const updateDirectory = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      token: string;
+      id: number;
+      status?: string;
+      listingUrl?: string;
+      notes?: string;
+    }) => data
+  )
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    await db.execute({
+      sql: "UPDATE directories SET status = COALESCE(?, status), listing_url = COALESCE(?, listing_url), notes = COALESCE(?, notes), updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [data.status ?? null, data.listingUrl ?? null, data.notes ?? null, data.id],
+    });
+    return { success: true as const };
+  });
+
+export const deleteDirectory = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; id: number }) => data)
+  .handler(async ({ data }) => {
+    await assertSession(data.token);
+    await db.execute({ sql: "DELETE FROM directories WHERE id = ?", args: [data.id] });
+    return { success: true as const };
+  });
+
 // ─── Blog featured images (auth required) ────────────────────────────────────
 
 // Generate an AI featured image from the editor's current title + description.

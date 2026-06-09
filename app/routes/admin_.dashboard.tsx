@@ -29,7 +29,12 @@ import {
   draftOutreach,
   updateOutreach,
   sendOutreach,
+  getDirectories,
+  scanDirectories,
+  updateDirectory,
+  deleteDirectory,
 } from "~/lib/actions";
+import { NAP, SITE_URL } from "~/lib/seo";
 import { slugify } from "~/content/blog";
 import {
   FileText,
@@ -52,6 +57,8 @@ import {
   X,
   Sparkles,
   Share2,
+  Building2,
+  Copy,
   Users,
   Upload,
   Lightbulb,
@@ -167,7 +174,7 @@ export const Route = createFileRoute("/admin_/dashboard")({
   component: DashboardPage,
 });
 
-type Tab = "quotes" | "contacts" | "blog" | "authors" | "ideas" | "outreach";
+type Tab = "quotes" | "contacts" | "blog" | "authors" | "ideas" | "outreach" | "directories";
 
 const insuranceIcon: Record<string, typeof Car> = {
   Auto: Car,
@@ -207,6 +214,10 @@ function DashboardPage() {
   const [ideasMsg, setIdeasMsg] = useState("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [outreach, setOutreach] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [directories, setDirectories] = useState<any[]>([]);
+  const [dirBusy, setDirBusy] = useState(false);
+  const [dirMsg, setDirMsg] = useState("");
   const [outreachBusy, setOutreachBusy] = useState(false);
   const [outreachMsg, setOutreachMsg] = useState("");
 
@@ -225,14 +236,16 @@ function DashboardPage() {
     setLoading(true);
     const token = getToken();
     try {
-      const [q, c, p, a, ki, o] = await Promise.all([
+      const [q, c, p, a, ki, o, dir] = await Promise.all([
         getQuotes({ data: { token } }),
         getContacts({ data: { token } }),
         getBlogPostsAdmin({ data: { token } }),
         getAuthorsAdmin({ data: { token } }),
         getKeywordIdeas({ data: { token } }),
         getOutreach({ data: { token } }),
+        getDirectories({ data: { token } }),
       ]);
+      setDirectories(dir as any[]);
       setQuotes(q as any[]);
       setContacts(c as any[]);
       setPosts(p as any[]);
@@ -406,6 +419,43 @@ function DashboardPage() {
       setOutreachMsg("Send failed. Your session may have expired.");
     }
     await loadData();
+  };
+
+  // ── Directory handlers ──
+  const handleScanDirectories = async () => {
+    setDirMsg("");
+    setDirBusy(true);
+    try {
+      const res = await scanDirectories({ data: { token: getToken() } });
+      setDirMsg(res.success ? `Added ${res.added} new director${res.added === 1 ? "y" : "ies"}.` : res.error || "Scan failed.");
+      await loadData();
+    } catch {
+      setDirMsg("Scan failed. Your session may have expired.");
+    }
+    setDirBusy(false);
+  };
+
+  const handleUpdateDirectory = async (
+    id: number,
+    patch: { status?: string; listingUrl?: string; notes?: string }
+  ) => {
+    setDirectories((prev) =>
+      prev.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              ...(patch.status !== undefined ? { status: patch.status } : {}),
+              ...(patch.listingUrl !== undefined ? { listing_url: patch.listingUrl } : {}),
+            }
+          : d
+      )
+    );
+    await updateDirectory({ data: { token: getToken(), id, ...patch } }).catch(() => {});
+  };
+
+  const handleDeleteDirectory = async (id: number) => {
+    setDirectories((prev) => prev.filter((d) => d.id !== id));
+    await deleteDirectory({ data: { token: getToken(), id } }).catch(() => {});
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -931,6 +981,17 @@ function DashboardPage() {
             <Link2 className="w-4 h-4" />
             Outreach ({outreach.length})
           </button>
+          <button
+            onClick={() => setTab("directories")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              tab === "directories"
+                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            Directories ({directories.length})
+          </button>
         </div>
 
         {/* Content */}
@@ -1001,6 +1062,15 @@ function DashboardPage() {
             onDraft={handleDraftOutreach}
             onSave={handleSaveOutreach}
             onSend={handleSendOutreach}
+          />
+        ) : tab === "directories" ? (
+          <DirectoriesPanel
+            directories={directories}
+            busy={dirBusy}
+            message={dirMsg}
+            onScan={handleScanDirectories}
+            onUpdate={handleUpdateDirectory}
+            onDelete={handleDeleteDirectory}
           />
         ) : tab === "quotes" ? (
           <div className="space-y-3">
@@ -2546,6 +2616,183 @@ function OutreachPanel({
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Directories (local-SEO citations) panel ─────────────────────────────────
+
+const DIR_STATUS = [
+  { value: "not_started", label: "Not started" },
+  { value: "submitted", label: "Submitted" },
+  { value: "live", label: "Live" },
+  { value: "skipped", label: "Skipped" },
+];
+
+function DirectoriesPanel({
+  directories,
+  busy,
+  message,
+  onScan,
+  onUpdate,
+  onDelete,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  directories: any[];
+  busy: boolean;
+  message: string;
+  onScan: () => void;
+  onUpdate: (
+    id: number,
+    patch: { status?: string; listingUrl?: string }
+  ) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const napBlock = `${NAP.name}\n${NAP.streetAddress}\n${NAP.addressLocality}, ${NAP.addressRegion} ${NAP.postalCode}\n${NAP.telephoneDisplay}\n${NAP.email}\n${SITE_URL}`;
+  const copyNap = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(napBlock).then(
+        () => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        },
+        () => {}
+      );
+    }
+  };
+
+  const liveCount = directories.filter((d) => String(d.status) === "live").length;
+
+  return (
+    <div>
+      {/* NAP card — use the IDENTICAL details on every directory. */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <h2 className="font-heading text-lg font-bold text-text-primary mb-1">
+              Your business details (NAP)
+            </h2>
+            <p className="text-xs text-text-secondary mb-3">
+              Use these <strong>exact</strong> details on every directory — consistent
+              Name / Address / Phone is the #1 local-SEO ranking factor.
+            </p>
+            <div className="text-sm text-text-primary leading-relaxed bg-surface rounded-xl p-4 font-mono whitespace-pre-line">
+              {napBlock}
+            </div>
+          </div>
+          <button
+            onClick={copyNap}
+            className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-text-primary px-3 py-2 rounded-lg transition-colors shrink-0"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+      </div>
+
+      {/* Header + scan */}
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+        <p className="text-sm text-text-muted">
+          {directories.length} director{directories.length === 1 ? "y" : "ies"} ·{" "}
+          {liveCount} live
+          {message && (
+            <span className="ml-3 text-primary-600 font-medium">{message}</span>
+          )}
+        </p>
+        <button
+          onClick={onScan}
+          disabled={busy}
+          className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
+        >
+          {busy ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+          Find directories
+        </button>
+      </div>
+
+      {directories.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-text-muted">
+            No directories yet. Click “Find directories” to research where Kover
+            King should be listed.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {directories.map((d) => (
+            <div
+              key={String(d.id)}
+              className="bg-white rounded-2xl border border-gray-100 px-5 py-4"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                      href={String(d.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-text-primary text-sm hover:text-primary-500 transition-colors"
+                    >
+                      {String(d.name)}
+                    </a>
+                    {d.category && (
+                      <span className="text-xs font-medium text-primary-600 bg-cream px-2 py-0.5 rounded-full">
+                        {String(d.category)}
+                      </span>
+                    )}
+                  </div>
+                  {d.notes && (
+                    <p className="text-xs text-text-muted mt-1">{String(d.notes)}</p>
+                  )}
+                  {String(d.status) === "live" && (
+                    <input
+                      type="url"
+                      defaultValue={d.listing_url ? String(d.listing_url) : ""}
+                      onBlur={(e) =>
+                        onUpdate(Number(d.id), { listingUrl: e.target.value })
+                      }
+                      placeholder="Paste your live listing URL (the backlink)"
+                      className="mt-2 w-full text-xs px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <select
+                    value={String(d.status)}
+                    onChange={(e) => onUpdate(Number(d.id), { status: e.target.value })}
+                    className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border cursor-pointer ${
+                      String(d.status) === "live"
+                        ? "text-green-700 bg-green-50 border-green-200"
+                        : String(d.status) === "submitted"
+                          ? "text-blue-700 bg-blue-50 border-blue-200"
+                          : "text-text-secondary bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    {DIR_STATUS.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => onDelete(Number(d.id))}
+                    aria-label="Delete directory"
+                    title="Delete"
+                    className="flex items-center justify-center w-8 h-8 text-red-500 hover:text-white hover:bg-red-500 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
