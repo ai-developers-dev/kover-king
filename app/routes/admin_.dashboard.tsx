@@ -990,7 +990,7 @@ function DashboardPage() {
             }`}
           >
             <Building2 className="w-4 h-4" />
-            Directories ({directories.length})
+            Link Opportunities ({directories.length})
           </button>
         </div>
 
@@ -2666,9 +2666,32 @@ function DirectoriesPanel({
 
   const liveCount = directories.filter((d) => String(d.status) === "live").length;
 
+  // Group rows by category for the list view.
+  const CATEGORY_ORDER = [
+    "Directory",
+    "Insurance",
+    "Local IL",
+    "Sponsorship",
+    "Partnership",
+    "News/PR",
+    "Resource",
+  ];
+  const grouped = directories.reduce(
+    (acc, d) => {
+      const cat = String(d.category || "Directory");
+      (acc[cat] ||= []).push(d);
+      return acc;
+    },
+    {} as Record<string, typeof directories>
+  );
+  const orderedCats = [
+    ...CATEGORY_ORDER.filter((c) => grouped[c]?.length),
+    ...Object.keys(grouped).filter((c) => !CATEGORY_ORDER.includes(c)),
+  ];
+
   return (
     <div>
-      {/* NAP card — use the IDENTICAL details on every directory. */}
+      {/* NAP card — use the IDENTICAL details everywhere you list/link. */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
         <div className="flex items-start gap-4">
           <div className="flex-1">
@@ -2676,7 +2699,7 @@ function DirectoriesPanel({
               Your business details (NAP)
             </h2>
             <p className="text-xs text-text-secondary mb-3">
-              Use these <strong>exact</strong> details on every directory — consistent
+              Use these <strong>exact</strong> details on every listing — consistent
               Name / Address / Phone is the #1 local-SEO ranking factor.
             </p>
             <div className="text-sm text-text-primary leading-relaxed bg-surface rounded-xl p-4 font-mono whitespace-pre-line">
@@ -2696,7 +2719,7 @@ function DirectoriesPanel({
       {/* Header + scan */}
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <p className="text-sm text-text-muted">
-          {directories.length} director{directories.length === 1 ? "y" : "ies"} ·{" "}
+          {directories.length} opportunit{directories.length === 1 ? "y" : "ies"} ·{" "}
           {liveCount} live
           {message && (
             <span className="ml-3 text-primary-600 font-medium">{message}</span>
@@ -2712,7 +2735,7 @@ function DirectoriesPanel({
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
-          Find directories
+          Find opportunities
         </button>
       </div>
 
@@ -2720,13 +2743,21 @@ function DirectoriesPanel({
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="text-text-muted">
-            No directories yet. Click “Find directories” to research where Kover
-            King should be listed.
+            No link opportunities yet. Click “Find opportunities” to research
+            directories, chambers, sponsorships, partnerships, and local press
+            where Kover King can earn backlinks.
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {directories.map((d) => (
+        <div className="space-y-8">
+          {orderedCats.map((cat) => (
+            <div key={cat}>
+              <h3 className="text-sm font-semibold text-text-muted mb-3">
+                {cat}{" "}
+                <span className="text-text-muted/60">({grouped[cat].length})</span>
+              </h3>
+              <div className="space-y-3">
+          {grouped[cat].map((d) => (
             <div
               key={String(d.id)}
               className="bg-white rounded-2xl border border-gray-100 px-5 py-4"
@@ -2790,6 +2821,9 @@ function DirectoriesPanel({
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+            </div>
+          ))}
               </div>
             </div>
           ))}
