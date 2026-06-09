@@ -109,9 +109,9 @@ async function renderImage(
       model: "gpt-image-1",
       prompt,
       size: "1536x1024",
-      quality: "medium",
+      quality: "high",
       output_format: "webp",
-      output_compression: 80,
+      output_compression: 85,
       n: 1,
     } as Record<string, unknown>);
     const b64 = g.data?.[0]?.b64_json;
@@ -129,7 +129,7 @@ async function renderImage(
     model: "dall-e-3",
     prompt,
     size: "1792x1024",
-    quality: "standard",
+    quality: "hd",
     style: "natural",
     n: 1,
   });
