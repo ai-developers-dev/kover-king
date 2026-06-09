@@ -427,7 +427,7 @@ function DashboardPage() {
     setDirBusy(true);
     try {
       const res = await scanDirectories({ data: { token: getToken() } });
-      setDirMsg(res.success ? `Added ${res.added} new director${res.added === 1 ? "y" : "ies"}.` : res.error || "Scan failed.");
+      setDirMsg(res.success ? `Added ${res.added} new opportunit${res.added === 1 ? "y" : "ies"}.` : res.error || "Scan failed.");
       await loadData();
     } catch {
       setDirMsg("Scan failed. Your session may have expired.");
