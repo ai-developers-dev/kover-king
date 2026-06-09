@@ -23,10 +23,11 @@ const SCENE_SYSTEM =
   "Read BOTH the title AND the description carefully, then capture the article's SPECIFIC subject and angle — not a generic car or house. " +
   'Respond with strict JSON {"scene": string, "alt": string}. ' +
   '"scene" is ONE vivid, concrete, photographable sentence depicting a real moment that represents THIS article\'s topic. ' +
-  "Pick a composition that fits the topic and VARY it across articles — e.g. a family loading their car in an Illinois driveway, a homeowner relaxing on a front porch, " +
-  "a small-business owner opening up their shop, a couple reviewing coverage at a kitchen table, a young driver with their first car, a landlord outside a duplex, " +
-  "a parent buckling a child into a car seat, a quiet tree-lined Springfield street. Do NOT default to a generic car or a generic house exterior. " +
-  "Hard constraints: no text, words, numbers, charts, logos, watermarks, or signage anywhere in the image; if people appear they are warm, diverse, and non-stereotypical; " +
+  "STRONGLY prefer real-life, mostly-OUTDOOR lifestyle moments that contain NO paper, documents, screens, signs, or anything with writing on it — e.g. a family loading their car in a leafy Illinois driveway, a homeowner relaxing on a front porch, " +
+  "kids riding bikes past tidy Midwestern houses, a couple unloading groceries from an SUV, a small-business owner unlocking their storefront in the morning, a young driver washing their first car, a landlord walking past a duplex, " +
+  "a parent buckling a child into a car seat, a quiet tree-lined Springfield street in fall. " +
+  "AVOID over-used desk/office clichés: do NOT show people staring at laptops, holding paperwork, or reviewing documents at a table (AI renders the text as gibberish and it looks fake). Vary the composition every time. " +
+  "Hard constraints: absolutely NO text, words, letters, numbers, paper, documents, charts, logos, watermarks, screens, or signage anywhere in the image; if people appear they are warm, diverse, and non-stereotypical; " +
   'never depict accidents, vehicle/property damage, cash, or "approved"/"guaranteed" stamps. ' +
   '"alt" is concise (<=120 chars) descriptive alt text, warm and realistic, set in Illinois/the Midwest.';
 
@@ -35,10 +36,9 @@ function stylePrompt(scene: string): string {
   return (
     `Photorealistic, editorial-quality landscape (16:9) featured image for an insurance article. ` +
     `Scene: ${scene} ` +
-    `Style: warm natural daylight, clean modern Midwestern Illinois homes, driveways, and Main-Street neighborhoods, ` +
-    `professional, reassuring, and trustworthy, lifestyle-documentary feel, soft depth of field, true-to-life color, ` +
-    `with subtle warm amber/orange light that complements a warm brand palette. ` +
-    `Absolutely no text, letters, numbers, logos, watermarks, or signage. No charts or dollar figures, no "approved" stamps. ` +
+    `Style: bright, clean, natural daylight with neutral white balance and true-to-life, balanced color (NOT orange-tinted, NOT a heavy warm/amber color cast — avoid a sepia or golden-hour wash). ` +
+    `Modern Midwestern Illinois homes, driveways, and tree-lined neighborhoods; professional, reassuring, authentic lifestyle-documentary photography; natural soft depth of field; crisp and realistic, like a real DSLR photo. ` +
+    `Absolutely no text, letters, numbers, paper, documents, screens, logos, watermarks, or signage anywhere. No charts or dollar figures, no "approved" stamps. ` +
     `Never show accidents or damage. Any people are warm and natural in the scene, diverse, and non-stereotypical.`
   );
 }
