@@ -72,6 +72,45 @@ function getToken(): string {
   return sessionStorage.getItem("admin-token") || "";
 }
 
+// Downscale an uploaded image in the browser to a sane web size and re-encode
+// as JPEG, returning base64 (no data: prefix) + final dimensions. Keeps the
+// upload payload well under Vercel's ~4.5MB serverless request-body limit, which
+// raw camera photos otherwise exceed.
+async function downscaleImage(
+  file: File,
+  maxDim = 1600,
+  quality = 0.85
+): Promise<{ dataBase64: string; contentType: string; width: number; height: number }> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read the file."));
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error("That file isn't a readable image."));
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const width = Math.round(img.width * scale);
+  const height = Math.round(img.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Image processing isn't supported in this browser.");
+  ctx.drawImage(img, 0, 0, width, height);
+  const out = canvas.toDataURL("image/jpeg", quality);
+  return {
+    dataBase64: out.split(",")[1] ?? "",
+    contentType: "image/jpeg",
+    width,
+    height,
+  };
+}
+
 // Sources are edited as "Title | https://url" lines and stored as JSON.
 function citationsToText(raw: unknown): string {
   if (!raw) return "";
@@ -647,6 +686,7 @@ function DashboardPage() {
           token: getToken(),
           title: blogForm.title,
           description: blogForm.description,
+          body: blogForm.body,
           slug: blogForm.slug || slugify(blogForm.title),
         },
       });
@@ -671,27 +711,31 @@ function DashboardPage() {
     setBlogError("");
     setImageBusy(true);
     try {
-      const dataBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || "").split(",")[1] ?? "");
-        reader.onerror = () => reject(new Error("read failed"));
-        reader.readAsDataURL(file);
-      });
+      // Downscale + re-encode in the browser BEFORE upload. Vercel serverless
+      // functions reject request bodies over ~4.5MB, and a raw phone/camera
+      // photo (base64-inflated) blows past that — which is why direct uploads
+      // failed. A featured image only displays ~1536px wide, so this is lossless
+      // in practice and keeps the payload tiny.
+      const { dataBase64, contentType, width, height } = await downscaleImage(file);
       const res = await uploadFeaturedImage({
-        data: { token: getToken(), filename: file.name, contentType: file.type, dataBase64 },
+        data: { token: getToken(), filename: file.name, contentType, dataBase64 },
       });
       if (!res.success) {
         setBlogError(res.error || "Upload failed.");
       } else {
         updateForm({
           featuredImageUrl: res.url,
-          featuredImageWidth: null,
-          featuredImageHeight: null,
+          featuredImageWidth: width,
+          featuredImageHeight: height,
           featuredImageCredit: "Uploaded",
         });
       }
-    } catch {
-      setBlogError("Upload failed.");
+    } catch (err) {
+      setBlogError(
+        err instanceof Error && err.message
+          ? `Upload failed: ${err.message}`
+          : "Upload failed."
+      );
     }
     setImageBusy(false);
   };

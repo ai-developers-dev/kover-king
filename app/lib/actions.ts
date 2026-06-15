@@ -553,7 +553,13 @@ export const deleteDirectory = createServerFn({ method: "POST" })
 // Returns the image fields for the admin form to hold until save.
 export const generateFeaturedImage = createServerFn({ method: "POST" })
   .inputValidator(
-    (data: { token: string; title: string; description?: string; slug?: string }) => data
+    (data: {
+      token: string;
+      title: string;
+      description?: string;
+      body?: string;
+      slug?: string;
+    }) => data
   )
   .handler(
     async ({
@@ -584,6 +590,7 @@ export const generateFeaturedImage = createServerFn({ method: "POST" })
         const img = await gen({
           title: data.title,
           description: data.description,
+          body: data.body,
           slug: data.slug || "post",
         });
         return { success: true, ...img };
@@ -650,7 +657,7 @@ export const bulkGenerateMissingImages = createServerFn({ method: "POST" })
         return { success: false, error: "OpenAI and Vercel Blob must both be configured." };
       }
       const rows = await db.execute(
-        "SELECT slug, title, description FROM blog_posts WHERE featured_image_url IS NULL ORDER BY id DESC LIMIT 20"
+        "SELECT slug, title, description, body FROM blog_posts WHERE featured_image_url IS NULL ORDER BY id DESC LIMIT 20"
       );
       const { generateFeaturedImage: gen } = await import("./blog-image");
       let generated = 0;
@@ -660,6 +667,7 @@ export const bulkGenerateMissingImages = createServerFn({ method: "POST" })
           const img = await gen({
             title: String(r.title),
             description: String(r.description || ""),
+            body: String(r.body || ""),
             slug: String(r.slug),
           });
           await db.execute({

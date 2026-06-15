@@ -20,16 +20,15 @@ export const AI_IMAGE_CREDIT = "AI-generated (OpenAI)";
 
 const SCENE_SYSTEM =
   "You are an art director choosing the featured image for a blog article from an independent Illinois insurance agency (Kover King, Springfield IL — auto, home, life, business, landlord, duplex). " +
-  "Read BOTH the title AND the description carefully, then capture the article's SPECIFIC subject and angle — not a generic car or house. " +
+  "Read the ENTIRE article provided (title, description, and body) and identify its SPECIFIC subject, then describe an image that a reader would instantly recognize as being about THAT topic. RELEVANCE TO THE ACTUAL TOPIC IS THE #1 PRIORITY — a generic happy-family photo is wrong if it doesn't match the subject. " +
   'Respond with strict JSON {"scene": string, "alt": string}. ' +
-  '"scene" is ONE vivid, concrete, photographable sentence depicting a real moment that represents THIS article\'s topic. ' +
-  "STRONGLY prefer real-life, mostly-OUTDOOR lifestyle moments that contain NO paper, documents, screens, signs, or anything with writing on it — e.g. a family loading their car in a leafy Illinois driveway, a homeowner relaxing on a front porch, " +
-  "kids riding bikes past tidy Midwestern houses, a couple unloading groceries from an SUV, a small-business owner unlocking their storefront in the morning, a young driver washing their first car, a landlord walking past a duplex, " +
-  "a parent buckling a child into a car seat, a quiet tree-lined Springfield street in fall. " +
-  "AVOID over-used desk/office clichés: do NOT show people staring at laptops, holding paperwork, or reviewing documents at a table (AI renders the text as gibberish and it looks fake). Vary the composition every time. " +
-  "Hard constraints: absolutely NO text, words, letters, numbers, paper, documents, charts, logos, watermarks, screens, or signage anywhere in the image; if people appear they are warm, diverse, and non-stereotypical; " +
-  'never depict accidents, vehicle/property damage, cash, or "approved"/"guaranteed" stamps. ' +
-  '"alt" is concise (<=120 chars) descriptive alt text, warm and realistic, set in Illinois/the Midwest.';
+  '"scene" is ONE vivid, concrete, photographable sentence depicting a real moment that clearly represents THIS article\'s topic. ' +
+  "Depict the topic's real-world situation or setting directly. Examples: a flood-insurance article → rainwater pooling around the foundation of a suburban home under a stormy sky; a teen-driver article → a teenager and parent beside a car in a driveway; a life-insurance article → parents holding a young child on a porch; a business article → an owner standing in their open shop; a roof-claim article → a home with a weathered roof after a storm, clouds clearing. " +
+  "You MAY show relevant weather, water, storms, wear, or other conditions central to the topic. Keep it realistic and reassuring — show the SITUATION or RISK, not graphic catastrophe, injury, ruined interiors, or people in distress. " +
+  "Only fall back to a generic lifestyle moment (family by their home, car in a driveway, tidy Midwestern street) when the article topic is truly general with no specific subject to depict. " +
+  "AVOID over-used desk/office clichés: do NOT show people staring at laptops, holding paperwork, or reviewing documents at a table (AI renders the text as gibberish and it looks fake). Vary the composition. " +
+  "Hard constraints: absolutely NO text, words, letters, numbers, paper, documents, charts, logos, watermarks, screens, or signage anywhere in the image; if people appear they are warm, diverse, and non-stereotypical; no cash or \"approved\"/\"guaranteed\" stamps. " +
+  '"alt" is concise (<=120 chars) descriptive alt text that accurately describes the scene, set in Illinois/the Midwest.';
 
 /** Fixed brand style wrapper — the prompt actually sent to the image model. */
 function stylePrompt(scene: string): string {
@@ -37,16 +36,17 @@ function stylePrompt(scene: string): string {
     `Photorealistic, editorial-quality landscape (16:9) featured image for an insurance article. ` +
     `Scene: ${scene} ` +
     `Style: bright, clean, natural daylight with neutral white balance and true-to-life, balanced color (NOT orange-tinted, NOT a heavy warm/amber color cast — avoid a sepia or golden-hour wash). ` +
-    `Modern Midwestern Illinois homes, driveways, and tree-lined neighborhoods; professional, reassuring, authentic lifestyle-documentary photography; natural soft depth of field; crisp and realistic, like a real DSLR photo. ` +
+    `Midwestern Illinois setting; professional, authentic editorial-documentary photography; natural soft depth of field; crisp and realistic, like a real DSLR photo. ` +
     `Absolutely no text, letters, numbers, paper, documents, screens, logos, watermarks, or signage anywhere. No charts or dollar figures, no "approved" stamps. ` +
-    `Never show accidents or damage. Any people are warm and natural in the scene, diverse, and non-stereotypical.`
+    `Depict the scene's real conditions (including weather or water if relevant) honestly but tastefully — show the situation, not graphic destruction, injury, or distress. Any people are warm and natural in the scene, diverse, and non-stereotypical.`
   );
 }
 
-/** Step 1: title + description -> { scene, alt }. Falls back to the title. */
+/** Step 1: full article -> { scene, alt }. Falls back to the title. */
 async function deriveScene(
   title: string,
-  description?: string
+  description?: string,
+  body?: string
 ): Promise<{ scene: string; alt: string }> {
   const key = process.env.OPENAI_API_KEY;
   const fallback = { scene: title, alt: title };
@@ -54,13 +54,23 @@ async function deriveScene(
   try {
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: key });
+    // Give the art director the full article (trimmed) so the image matches the
+    // actual subject, not just the headline.
+    const bodyExcerpt = (body ?? "").replace(/\s+/g, " ").trim().slice(0, 3000);
+    const userContent = [
+      `Title: ${title}`,
+      `Description: ${description ?? ""}`,
+      bodyExcerpt ? `Article body:\n${bodyExcerpt}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.7,
       messages: [
         { role: "system", content: SCENE_SYSTEM },
-        { role: "user", content: `Title: ${title}\nDescription: ${description ?? ""}` },
+        { role: "user", content: userContent },
       ],
     });
     const parsed = JSON.parse(completion.choices[0]?.message?.content ?? "{}");
@@ -153,12 +163,13 @@ async function renderImage(
 export async function generateFeaturedImage(opts: {
   title: string;
   description?: string;
+  body?: string;
   slug: string;
 }): Promise<GeneratedImage> {
   if (!opts.title.trim()) {
     throw new Error("Add a title first so the image can match the post.");
   }
-  const { scene, alt } = await deriveScene(opts.title, opts.description);
+  const { scene, alt } = await deriveScene(opts.title, opts.description, opts.body);
   const img = await renderImage(stylePrompt(scene), opts.slug);
   return {
     url: img.url,
