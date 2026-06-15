@@ -7,6 +7,7 @@
 // via Resend. Reuses the same OpenAI/Tavily approach as generateBlogPost.
 
 import { db, initDb } from "./db";
+import { BLOG_CATEGORIES } from "./seo";
 
 export type KeywordIdea = {
   keyword: string;
@@ -70,10 +71,12 @@ async function tavilySearch(query: string): Promise<string> {
 // insurance shoppers ask. Kept small to stay within time/token limits.
 async function gatherResearch(): Promise<string> {
   const queries = [
-    "common insurance questions homeowners and drivers ask in Illinois",
-    "Springfield Illinois insurance long tail keywords low competition",
+    "auto and car insurance questions Illinois drivers ask",
+    "home and homeowners insurance questions Illinois",
+    "life insurance questions families ask Illinois",
+    "small business and commercial insurance questions Illinois",
     "landlord and duplex insurance questions Illinois",
-    "life and business insurance questions small business owners ask",
+    "Springfield Illinois insurance long tail keywords low competition",
   ];
   const results = await Promise.all(queries.map((q) => tavilySearch(q)));
   return results.filter(Boolean).join("\n\n").slice(0, 7000);
@@ -95,13 +98,18 @@ export async function researchKeywordIdeas(): Promise<{
   const systemPrompt = [
     "You are an SEO strategist for Kover King Insurance, an independent insurance agency in Springfield, IL (serving Central Illinois) that compares 30+ carriers.",
     "Propose blog post ideas that the agency can realistically RANK for and that will drive qualified organic traffic over time.",
+    "The agency sells across these lines of business:",
+    `  ${BLOG_CATEGORIES.join(", ")}.`,
+    "HARD RULES for the set of 5 ideas:",
+    "- COVERAGE: spread the 5 ideas across DIFFERENT lines of business above — do NOT cluster on one line. Across the 5 ideas, cover at least 4 distinct lines, and no single line may appear more than twice. Auto, home, life, and business insurance must each be represented (the 5th can be any line, including landlord/duplex).",
+    "- Tag each idea with the line of business it belongs to in a \"category\" field, chosen EXACTLY from the list above.",
     "HARD RULES for each idea's keyword:",
     "- It MUST be a long-tail phrase of 3 to 5 words (count the words).",
     '- NEVER propose broad head terms like "home insurance", "auto insurance", "life insurance" — we cannot rank for those.',
-    "- Favor specific, intent-rich phrases, ideally with a local (Springfield/Illinois) or situational angle, e.g. \"duplex insurance for landlords\", \"teen driver insurance Illinois\", \"home insurance after roof claim\".",
+    "- Favor specific, intent-rich phrases, ideally with a local (Springfield/Illinois) or situational angle. Examples spanning lines: \"teen driver insurance Illinois\" (auto), \"home insurance after roof claim\" (home), \"life insurance for young parents\" (life), \"small business liability insurance Illinois\" (business), \"duplex insurance for landlords\" (landlord/duplex).",
     "- Each keyword must be distinct (different topic/theme).",
-    "Return ONLY JSON of the form {\"ideas\":[{\"keyword\":string,\"title\":string,\"rationale\":string,\"intent\":string}]} with EXACTLY 5 ideas.",
-    "title = a compelling blog post title built on the keyword. rationale = one sentence on why it can rank and the traffic/why-it-matters. intent = the searcher's intent (informational, commercial, etc.).",
+    "Return ONLY JSON of the form {\"ideas\":[{\"keyword\":string,\"title\":string,\"category\":string,\"rationale\":string,\"intent\":string}]} with EXACTLY 5 ideas.",
+    "title = a compelling blog post title built on the keyword. category = the line of business (from the list above). rationale = one sentence on why it can rank and the traffic/why-it-matters. intent = the searcher's intent (informational, commercial, etc.).",
   ].join("\n");
 
   const userPrompt = research
