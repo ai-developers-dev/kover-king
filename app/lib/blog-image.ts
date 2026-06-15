@@ -108,8 +108,12 @@ async function renderImage(
     const g = await openai.images.generate({
       model: "gpt-image-1",
       prompt,
+      // "medium" (~25s) not "high" (~57s): the whole server function (scene
+      // derivation + image gen + Blob upload) must finish inside Vercel's
+      // function timeout. "high" reliably blows past it. The look comes from
+      // the prompt (natural color, no text), not this quality lever.
       size: "1536x1024",
-      quality: "high",
+      quality: "medium",
       output_format: "webp",
       output_compression: 85,
       n: 1,
