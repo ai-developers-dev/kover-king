@@ -49,7 +49,11 @@ export const Route = createFileRoute("/")({
         content: "website",
       },
     ],
-    links: [{ rel: "canonical", href: canonical("/") }],
+    links: [
+      { rel: "canonical", href: canonical("/") },
+      // Preload the hero image so it paints fast (it's the LCP element).
+      { rel: "preload", as: "image", href: "/hero-family.webp", fetchpriority: "high" },
+    ],
   }),
 });
 
@@ -308,15 +312,19 @@ function HomePage() {
                 className="absolute -inset-4 rounded-3xl bg-primary-50 opacity-60"
               />
               <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)]">
-                {/* Image placeholder — swap <img> here when photo is ready */}
-                <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-primary-50 to-cream">
-                  <div className="text-center">
-                    <Shield className="mx-auto h-20 w-20 text-primary-500 opacity-30" />
-                    <p className="mt-3 text-sm font-medium text-text-muted">
-                      Agency Photo
-                    </p>
-                  </div>
-                </div>
+                {/* Hero photo. eager + fetchpriority because it's above the fold
+                    (the LCP element); the 4/3 aspect box reserves space so it
+                    causes no layout shift. */}
+                <img
+                  src="/hero-family.webp"
+                  alt="A happy family relaxing on the front lawn of their Springfield, Illinois home, protected by Kover King Insurance"
+                  width={1536}
+                  height={1024}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                  className="aspect-[4/3] w-full object-cover"
+                />
                 {/* Floating badge */}
                 <div className="absolute bottom-5 left-5 flex items-center gap-3 rounded-xl bg-white px-5 py-3 shadow-lg">
                   <div className="flex">
