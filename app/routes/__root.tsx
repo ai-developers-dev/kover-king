@@ -65,7 +65,7 @@ export const Route = createRootRoute({
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Roboto:wght@400;500;700&display=swap",
       },
     ],
     // GA4 — loads only when VITE_GA_ID is set; otherwise no scripts emitted.

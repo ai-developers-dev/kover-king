@@ -212,7 +212,7 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-            <p className="text-xs text-gray-600 italic">
+            <p className="text-xs text-gray-400 italic">
               Serving all of Sangamon County and Central Illinois
             </p>
           </div>
@@ -221,7 +221,7 @@ export function Footer() {
 
       {/* Bottom Bar */}
       <div className="border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-400">
           <p>&copy; 2026 Kover King Insurance Agency. All rights reserved.</p>
           <Link
             to="/admin"

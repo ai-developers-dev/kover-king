@@ -7,9 +7,9 @@
   --color-primary-200: #fed7aa;
   --color-primary-300: #fdba74;
   --color-primary-400: #fb923c;
-  --color-primary-500: #E9560C;
-  --color-primary-600: #d14a0a;
-  --color-primary-700: #b33d08;
+  --color-primary-500: #B33D08;
+  --color-primary-600: #9A3412;
+  --color-primary-700: #7C2D12;
   --color-primary-800: #9a3412;
   --color-primary-900: #7c2d12;
 
@@ -22,7 +22,7 @@
   --color-surface-white: #FFFFFF;
   --color-text-primary: #171717;
   --color-text-secondary: #525252;
-  --color-text-muted: #737373;
+  --color-text-muted: #595959;
 
   /* Accent cream for link/badge backgrounds */
   --color-cream: #FFF6EB;

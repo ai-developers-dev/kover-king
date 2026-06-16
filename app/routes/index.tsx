@@ -360,25 +360,31 @@ function HomePage() {
           <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-surface to-transparent z-10 pointer-events-none" />
           <div className="logo-scroll-track flex items-center gap-16 w-max">
             {[...Array(2)].map((_, setIndex) => (
-              <div key={setIndex} className="flex items-center gap-16 shrink-0">
+              <div
+                key={setIndex}
+                className="flex items-center gap-16 shrink-0"
+                aria-hidden={setIndex === 1 ? "true" : undefined}
+              >
                 {[
-                  { src: "/logos/Progressive-logo-removebg-preview.png", alt: "Progressive" },
-                  { src: "/logos/Travelers-logo-removebg-preview.png", alt: "Travelers" },
-                  { src: "/logos/erie-logo-removebg-preview.png", alt: "Erie Insurance" },
-                  { src: "/logos/safeco-logo-removebg-preview.png", alt: "Safeco" },
-                  { src: "/logos/auto-owners-logo-removebg-preview.png", alt: "Auto-Owners" },
-                  { src: "/logos/NationalGeneralLogo-removebg-preview.png", alt: "National General" },
-                  { src: "/logos/MadisonMutual-removebg-preview.png", alt: "Madison Mutual" },
-                  { src: "/logos/bristol-west-logo-removebg-preview.png", alt: "Bristol West" },
-                  { src: "/logos/openly-logo-removebg-preview.png", alt: "Openly" },
-                  { src: "/logos/hippo-logo-removebg-preview.png", alt: "Hippo" },
-                  { src: "/logos/branch-logo-removebg-preview.png", alt: "Branch" },
-                  { src: "/logos/universal-properites-logo-removebg-preview.png", alt: "Universal Property" },
+                  { src: "/logos/Progressive-logo-removebg-preview.webp", alt: "Progressive" },
+                  { src: "/logos/Travelers-logo-removebg-preview.webp", alt: "Travelers" },
+                  { src: "/logos/erie-logo-removebg-preview.webp", alt: "Erie Insurance" },
+                  { src: "/logos/safeco-logo-removebg-preview.webp", alt: "Safeco" },
+                  { src: "/logos/auto-owners-logo-removebg-preview.webp", alt: "Auto-Owners" },
+                  { src: "/logos/NationalGeneralLogo-removebg-preview.webp", alt: "National General" },
+                  { src: "/logos/MadisonMutual-removebg-preview.webp", alt: "Madison Mutual" },
+                  { src: "/logos/bristol-west-logo-removebg-preview.webp", alt: "Bristol West" },
+                  { src: "/logos/openly-logo-removebg-preview.webp", alt: "Openly" },
+                  { src: "/logos/hippo-logo-removebg-preview.webp", alt: "Hippo" },
+                  { src: "/logos/branch-logo-removebg-preview.webp", alt: "Branch" },
+                  { src: "/logos/universal-properites-logo-removebg-preview.webp", alt: "Universal Property" },
                 ].map((logo) => (
                   <img
                     key={`${setIndex}-${logo.alt}`}
                     src={logo.src}
                     alt={logo.alt}
+                    loading="lazy"
+                    decoding="async"
                     className="h-10 w-auto max-w-[140px] object-contain grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
                   />
                 ))}
@@ -445,6 +451,7 @@ function HomePage() {
                   </p>
                   <Link
                     to={service.href as "/"}
+                    aria-label={`Learn more about ${service.title}`}
                     className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-500 transition-colors hover:text-primary-600"
                   >
                     Learn More
@@ -481,7 +488,7 @@ function HomePage() {
                 <h3 className="font-heading text-3xl font-bold">
                   Talk to a Local Agent
                 </h3>
-                <p className="mt-3 text-lg leading-relaxed text-white/80">
+                <p className="mt-3 text-lg leading-relaxed text-white/90">
                   Ready to find better rates? Our licensed agents are standing
                   by to compare quotes from top carriers — at no cost to you.
                 </p>
@@ -508,7 +515,7 @@ function HomePage() {
                       className="h-4 w-4 fill-white text-white opacity-90"
                     />
                   ))}
-                  <span className="ml-1.5 text-sm font-medium text-white/80">
+                  <span className="ml-1.5 text-sm font-medium text-white/90">
                     5-star rated by Springfield clients
                   </span>
                 </div>
