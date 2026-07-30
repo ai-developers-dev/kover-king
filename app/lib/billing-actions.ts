@@ -374,3 +374,156 @@ export const deleteInvoice = createServerFn({ method: "POST" })
     await db.execute({ sql: "DELETE FROM invoices WHERE id = ?", args: [data.id] });
     return { success: true as const };
   });
+
+/**
+ * One-shot bill creation: takes customer details (existing or brand new),
+ * policy details, and the amount, then creates/updates all three records.
+ *
+ * This is what the "Create a Bill" form calls, so an agent never has to
+ * invite a customer and build a policy as separate steps first.
+ */
+export const createFullBill = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: {
+      token: string;
+      // customer — either an existing id, or the fields to create one
+      customer_id?: number;
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      // policy
+      carrier: string;
+      insurance_type: string;
+      policy_number?: string;
+      term: string;
+      premium_cents: number;
+      effective_date?: string;
+      // invoice
+      amount_cents: number;
+      due_date?: string;
+      notes?: string;
+      send: boolean;
+    }) => data
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin(data.token);
+
+    if (!data.carrier?.trim() || !data.insurance_type) {
+      return { success: false as const, error: "Carrier and insurance type are required." };
+    }
+    if (!data.amount_cents || data.amount_cents <= 0) {
+      return { success: false as const, error: "Enter an amount due greater than zero." };
+    }
+
+    // 1. Resolve the customer.
+    let customerId = data.customer_id;
+    let inviteSent = false;
+    if (!customerId) {
+      const email = normalizeEmail(data.email || "");
+      if (!email.includes("@")) {
+        return { success: false as const, error: "Enter a valid customer email." };
+      }
+      if (!data.first_name?.trim() || !data.last_name?.trim()) {
+        return { success: false as const, error: "Enter the customer's first and last name." };
+      }
+      const existing = await db.execute({
+        sql: "SELECT id FROM users WHERE email = ? LIMIT 1",
+        args: [email],
+      });
+      if (existing.rows.length > 0) {
+        customerId = Number(existing.rows[0].id);
+        await db.execute({
+          sql: "UPDATE users SET address=COALESCE(?,address), city=COALESCE(?,city), state=COALESCE(?,state), zip=COALESCE(?,zip), phone=COALESCE(?,phone) WHERE id=?",
+          args: [
+            data.address || null, data.city || null, data.state || null,
+            data.zip || null, data.phone || null, customerId,
+          ],
+        });
+      } else {
+        const placeholder = await hashPassword(generateToken());
+        const created = await db.execute({
+          sql: `INSERT INTO users (email, password_hash, role, first_name, last_name, phone,
+                address, city, state, zip, email_verified_at)
+                VALUES (?, ?, 'customer', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          args: [
+            email, placeholder, data.first_name.trim(), data.last_name.trim(),
+            data.phone?.trim() || null, data.address || null, data.city || null,
+            data.state || "IL", data.zip || null,
+          ],
+        });
+        customerId = Number(created.lastInsertRowid);
+
+        // Invite them to set a password so they can actually pay.
+        const resetToken = generateToken();
+        await db.execute({
+          sql: "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
+          args: [customerId, resetToken, expiryFromNow(72 * HOUR_MS)],
+        });
+        try {
+          const { sendPasswordResetEmail } = await import("./portal-email");
+          await sendPasswordResetEmail({
+            to: email,
+            firstName: data.first_name.trim(),
+            token: resetToken,
+          });
+          inviteSent = true;
+        } catch {
+          /* best-effort */
+        }
+      }
+    }
+
+    // 2. Policy.
+    const pol = await db.execute({
+      sql: `INSERT INTO policies (customer_id, carrier, insurance_type, policy_number,
+            term, premium_cents, effective_date, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
+      args: [
+        customerId, data.carrier.trim(), data.insurance_type,
+        data.policy_number || null, data.term, Math.round(data.premium_cents),
+        data.effective_date || null,
+      ],
+    });
+    const policyId = Number(pol.lastInsertRowid);
+
+    // 3. Invoice.
+    const invoiceNumber = `KK-${Date.now().toString(36).toUpperCase()}`;
+    await db.execute({
+      sql: `INSERT INTO invoices (customer_id, policy_id, invoice_number, amount_cents,
+            due_date, term, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        customerId, policyId, invoiceNumber, Math.round(data.amount_cents),
+        data.due_date || null, data.term, data.send ? "sent" : "draft",
+        data.notes || null,
+      ],
+    });
+
+    if (data.send) {
+      try {
+        const u = await db.execute({
+          sql: "SELECT email, first_name FROM users WHERE id = ? LIMIT 1",
+          args: [customerId],
+        });
+        const cust = u.rows[0];
+        if (cust) {
+          const { sendInvoiceEmail } = await import("./portal-email");
+          await sendInvoiceEmail({
+            to: String(cust.email),
+            firstName: cust.first_name ? String(cust.first_name) : "there",
+            invoiceNumber,
+            amountCents: Math.round(data.amount_cents),
+            dueDate: data.due_date || null,
+          });
+        }
+      } catch {
+        /* best-effort */
+      }
+    }
+
+    return { success: true as const, invoiceNumber, customerId, policyId, inviteSent };
+  });

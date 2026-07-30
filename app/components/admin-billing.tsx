@@ -10,6 +10,7 @@ import {
   deletePolicyDocument,
   getInvoicesAdmin,
   createInvoice,
+  createFullBill,
   updateInvoiceStatus,
   recordOfflinePayment,
 } from "~/lib/billing-actions";
@@ -294,9 +295,11 @@ export function AdminBilling({ token }: { token: string }) {
         <InvoiceModal
           token={token}
           customers={customers}
-          policies={policies}
           onClose={() => setShowInvoice(false)}
-          onSaved={async () => { setShowInvoice(false); await load(); flash("Bill created."); }}
+          onSaved={async (num: string) => {
+            setShowInvoice(false); await load();
+            flash(`Bill ${num || ""} created.`);
+          }}
         />
       )}
       {showInvite && (
@@ -462,80 +465,210 @@ function PolicyModal({ token, customers, onClose, onSaved }: any) {
   );
 }
 
-function InvoiceModal({ token, customers, policies, onClose, onSaved }: any) {
-  const [f, setF] = useState({ customer_id: "", policy_id: "", amount: "", due_date: "", term: "", notes: "" });
+function InvoiceModal({ token, customers, onClose, onSaved }: any) {
+  // One form that captures everything: who the customer is (existing or new,
+  // with mailing address), what they're insured for, the premium mode, and
+  // the amount due. Creates customer + policy + invoice in a single action.
+  const [mode, setMode] = useState<"new" | "existing">(
+    customers.length > 0 ? "existing" : "new"
+  );
+  const [f, setF] = useState({
+    customer_id: "",
+    first_name: "", last_name: "", email: "", phone: "",
+    address: "", city: "", state: "IL", zip: "",
+    carrier: "Progressive", insurance_type: "Auto", policy_number: "",
+    term: "12_month", premium: "", effective_date: "",
+    amount: "", due_date: "", notes: "",
+  });
   const [send, setSend] = useState(true);
   const [busy, setBusy] = useState(false);
   const [e, setE] = useState("");
   const set = (k: string) => (ev: any) => setF({ ...f, [k]: ev.target.value });
-  const custPolicies = policies.filter(
-    (p: any) => String(p.customer_id) === f.customer_id
-  );
+
+  const submit = async () => {
+    setE("");
+    if (mode === "existing" && !f.customer_id) return setE("Select a customer.");
+    if (mode === "new" && (!f.first_name || !f.last_name || !f.email))
+      return setE("Enter the customer's name and email.");
+    const premiumCents = Math.round(parseFloat(f.premium || "0") * 100);
+    const amountCents = Math.round(parseFloat(f.amount || f.premium || "0") * 100);
+    if (!premiumCents) return setE("Enter the premium amount.");
+    if (!amountCents) return setE("Enter the amount due.");
+
+    setBusy(true);
+    const res = await createFullBill({
+      data: {
+        token,
+        ...(mode === "existing"
+          ? { customer_id: Number(f.customer_id) }
+          : {
+              first_name: f.first_name, last_name: f.last_name,
+              email: f.email, phone: f.phone,
+              address: f.address, city: f.city, state: f.state, zip: f.zip,
+            }),
+        carrier: f.carrier,
+        insurance_type: f.insurance_type,
+        policy_number: f.policy_number,
+        term: f.term,
+        premium_cents: premiumCents,
+        effective_date: f.effective_date,
+        amount_cents: amountCents,
+        due_date: f.due_date,
+        notes: f.notes,
+        send,
+      },
+    }).catch(() => ({ success: false as const, error: "Failed to create the bill." }));
+    setBusy(false);
+    if ((res as any).success) onSaved((res as any).invoiceNumber);
+    else setE((res as any).error);
+  };
 
   return (
     <Modal title="Create a Bill" onClose={onClose}>
       {e && <p className="mb-3 text-sm text-red-700">{e}</p>}
-      <div className="space-y-3">
-        <div>
-          <label className={label}>Customer</label>
-          <select value={f.customer_id} onChange={(ev) => setF({ ...f, customer_id: ev.target.value, policy_id: "" })} className={input}>
-            <option value="">Select a customer...</option>
-            {customers.map((c: any) => (
-              <option key={String(c.id)} value={String(c.id)}>
-                {String(c.first_name)} {String(c.last_name)} — {String(c.email)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={label}>Policy (optional)</label>
-          <select value={f.policy_id} onChange={set("policy_id")} className={input} disabled={!f.customer_id}>
-            <option value="">None</option>
-            {custPolicies.map((p: any) => (
-              <option key={String(p.id)} value={String(p.id)}>
-                {String(p.insurance_type)} · {String(p.carrier)} · {money(Number(p.premium_cents))}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={label}>Amount (USD)</label>
-            <input inputMode="decimal" value={f.amount} onChange={set("amount")} className={input} placeholder="150.00" />
+      <div className="space-y-5">
+        {/* ── Customer ── */}
+        <section>
+          <h4 className="text-xs font-bold uppercase tracking-wide text-text-muted mb-2">
+            Customer
+          </h4>
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setMode("new")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold border-2 transition-colors ${
+                mode === "new"
+                  ? "border-primary-500 bg-primary-50 text-primary-500"
+                  : "border-gray-200 text-text-secondary"
+              }`}
+            >
+              New Customer
+            </button>
+            <button
+              onClick={() => setMode("existing")}
+              disabled={customers.length === 0}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold border-2 transition-colors disabled:opacity-40 ${
+                mode === "existing"
+                  ? "border-primary-500 bg-primary-50 text-primary-500"
+                  : "border-gray-200 text-text-secondary"
+              }`}
+            >
+              Existing ({customers.length})
+            </button>
           </div>
-          <div>
-            <label className={label}>Term</label>
-            <select value={f.term} onChange={set("term")} className={input}>
-              <option value="">—</option>
-              {TERMS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+
+          {mode === "existing" ? (
+            <select value={f.customer_id} onChange={set("customer_id")} className={input}>
+              <option value="">Select a customer...</option>
+              {customers.map((c: any) => (
+                <option key={String(c.id)} value={String(c.id)}>
+                  {String(c.first_name)} {String(c.last_name)} — {String(c.email)}
+                </option>
+              ))}
             </select>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className={label}>First Name</label>
+                  <input value={f.first_name} onChange={set("first_name")} className={input} /></div>
+                <div><label className={label}>Last Name</label>
+                  <input value={f.last_name} onChange={set("last_name")} className={input} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className={label}>Email</label>
+                  <input type="email" value={f.email} onChange={set("email")} className={input} /></div>
+                <div><label className={label}>Phone</label>
+                  <input type="tel" value={f.phone} onChange={set("phone")} className={input} /></div>
+              </div>
+              <div><label className={label}>Street Address</label>
+                <input value={f.address} onChange={set("address")} className={input} placeholder="123 Main St" /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><label className={label}>City</label>
+                  <input value={f.city} onChange={set("city")} className={input} /></div>
+                <div><label className={label}>State</label>
+                  <input value={f.state} onChange={set("state")} className={input} maxLength={2} /></div>
+                <div><label className={label}>ZIP</label>
+                  <input value={f.zip} onChange={set("zip")} className={input} maxLength={5} /></div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ── Coverage ── */}
+        <section>
+          <h4 className="text-xs font-bold uppercase tracking-wide text-text-muted mb-2">
+            Coverage
+          </h4>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={label}>Insurance Type</label>
+                <select value={f.insurance_type} onChange={set("insurance_type")} className={input}>
+                  {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select></div>
+              <div><label className={label}>Carrier</label>
+                <select value={f.carrier} onChange={set("carrier")} className={input}>
+                  {CARRIERS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={label}>Policy Number</label>
+                <input value={f.policy_number} onChange={set("policy_number")} className={input} /></div>
+              <div><label className={label}>Effective Date</label>
+                <input type="date" value={f.effective_date} onChange={set("effective_date")} className={input} /></div>
+            </div>
           </div>
-        </div>
-        <div>
-          <label className={label}>Due Date</label>
-          <input type="date" value={f.due_date} onChange={set("due_date")} className={input} />
-        </div>
+        </section>
+
+        {/* ── Premium & billing ── */}
+        <section>
+          <h4 className="text-xs font-bold uppercase tracking-wide text-text-muted mb-2">
+            Premium &amp; Billing
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <label className={label}>Premium Mode</label>
+              <div className="grid grid-cols-3 gap-2">
+                {TERMS.map((t) => (
+                  <button
+                    key={t.value}
+                    onClick={() => setF({ ...f, term: t.value })}
+                    className={`py-2.5 rounded-lg text-xs font-semibold border-2 transition-colors ${
+                      f.term === t.value
+                        ? "border-primary-500 bg-primary-50 text-primary-500"
+                        : "border-gray-200 text-text-secondary hover:border-gray-300"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={label}>Premium Amount (USD)</label>
+                <input inputMode="decimal" value={f.premium} onChange={set("premium")}
+                  className={input} placeholder="1800.00" />
+              </div>
+              <div>
+                <label className={label}>Amount Due Now</label>
+                <input inputMode="decimal" value={f.amount} onChange={set("amount")}
+                  className={input} placeholder="same as premium" />
+              </div>
+            </div>
+            <div>
+              <label className={label}>Due Date</label>
+              <input type="date" value={f.due_date} onChange={set("due_date")} className={input} />
+            </div>
+          </div>
+        </section>
+
         <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
-          <input type="checkbox" checked={send} onChange={(ev) => setSend(ev.target.checked)} className="h-4 w-4 accent-[#B33D08]" />
+          <input type="checkbox" checked={send} onChange={(ev) => setSend(ev.target.checked)}
+            className="h-4 w-4 accent-[#B33D08]" />
           Email this bill to the customer now
         </label>
+
         <button
-          onClick={async () => {
-            if (!f.customer_id) return setE("Select a customer.");
-            const cents = Math.round(parseFloat(f.amount || "0") * 100);
-            if (!cents) return setE("Enter an amount.");
-            setBusy(true); setE("");
-            const res = await createInvoice({
-              data: {
-                token, customer_id: Number(f.customer_id),
-                policy_id: f.policy_id ? Number(f.policy_id) : undefined,
-                amount_cents: cents, due_date: f.due_date, term: f.term,
-                notes: f.notes, send,
-              },
-            }).catch(() => ({ success: false as const, error: "Failed." }));
-            setBusy(false);
-            if ((res as any).success) onSaved(); else setE((res as any).error);
-          }}
+          onClick={submit}
           disabled={busy}
           className="w-full bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl"
         >

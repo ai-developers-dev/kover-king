@@ -79,6 +79,19 @@ export async function initDb() {
     await db.execute(
       "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"
     );
+    // Mailing address on the customer record (idempotent adds).
+    for (const col of [
+      "ALTER TABLE users ADD COLUMN address TEXT",
+      "ALTER TABLE users ADD COLUMN city TEXT",
+      "ALTER TABLE users ADD COLUMN state TEXT",
+      "ALTER TABLE users ADD COLUMN zip TEXT",
+    ]) {
+      try {
+        await db.execute(col);
+      } catch {
+        /* column already exists */
+      }
+    }
 
     // ─── Policies, documents, billing ────────────────────────────────────
     // Money is stored as INTEGER CENTS everywhere. Never floats — rounding
