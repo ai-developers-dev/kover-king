@@ -79,6 +79,50 @@ export async function initDb() {
     await db.execute(
       "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"
     );
+
+    // ─── Policies, documents, billing ────────────────────────────────────
+    // Money is stored as INTEGER CENTS everywhere. Never floats — rounding
+    // errors on premium are not acceptable.
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS policies (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_id INTEGER NOT NULL, carrier TEXT NOT NULL, insurance_type TEXT NOT NULL, policy_number TEXT, term TEXT NOT NULL DEFAULT '12_month', premium_cents INTEGER NOT NULL DEFAULT 0, effective_date TEXT, expiration_date TEXT, status TEXT NOT NULL DEFAULT 'active', notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS policy_documents (id INTEGER PRIMARY KEY AUTOINCREMENT, policy_id INTEGER NOT NULL, kind TEXT NOT NULL DEFAULT 'other', blob_url TEXT NOT NULL, filename TEXT NOT NULL, size_bytes INTEGER, uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_id INTEGER NOT NULL, policy_id INTEGER, invoice_number TEXT UNIQUE NOT NULL, amount_cents INTEGER NOT NULL, due_date TEXT, term TEXT, status TEXT NOT NULL DEFAULT 'draft', stripe_payment_intent_id TEXT, paid_at DATETIME, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER NOT NULL, amount_cents INTEGER NOT NULL, method TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', stripe_payment_intent_id TEXT, last4 TEXT, recorded_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_policies_customer ON policies(customer_id)"
+    );
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id)"
+    );
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_docs_policy ON policy_documents(policy_id)"
+    );
+
+    // ─── Payment vault ───────────────────────────────────────────────────
+    // Card / bank details submitted by customers, held encrypted (AES-256-GCM,
+    // see app/lib/crypto-vault.ts) until an authorized agent keys them into the
+    // carrier's portal, then purged. `enc_payload` is the ONLY place sensitive
+    // digits live; everything else is display-safe metadata.
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS payment_methods (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_id INTEGER NOT NULL, invoice_id INTEGER, method TEXT NOT NULL, enc_payload TEXT, brand TEXT, last4 TEXT, name_on_account TEXT, status TEXT NOT NULL DEFAULT 'pending', purge_after DATETIME, processed_at DATETIME, processed_by TEXT, purged_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    // Who revealed which record, and when. Required for any audit.
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS payment_access_log (id INTEGER PRIMARY KEY AUTOINCREMENT, payment_method_id INTEGER NOT NULL, actor TEXT, action TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_pm_customer ON payment_methods(customer_id)"
+    );
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_pm_status ON payment_methods(status)"
+    );
     // blog_posts predates author records — add the new columns if missing.
     // ALTER ... ADD COLUMN throws "duplicate column" if already present, so
     // each is wrapped to stay idempotent across restarts/deploys.

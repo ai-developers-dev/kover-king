@@ -15,6 +15,7 @@ import { Route as SmsAlertsRouteImport } from './routes/sms-alerts'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QuoteContinueRouteImport } from './routes/quote-continue'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LifeInsuranceSpringfieldIlRouteImport } from './routes/life-insurance-springfield-il'
 import { Route as LifeRouteImport } from './routes/life'
@@ -67,6 +68,11 @@ const QuoteContinueRoute = QuoteContinueRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/life'
     | '/life-insurance-springfield-il'
     | '/login'
+    | '/portal'
     | '/privacy-policy'
     | '/quote-continue'
     | '/reset-password'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/life'
     | '/life-insurance-springfield-il'
     | '/login'
+    | '/portal'
     | '/privacy-policy'
     | '/quote-continue'
     | '/reset-password'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/life'
     | '/life-insurance-springfield-il'
     | '/login'
+    | '/portal'
     | '/privacy-policy'
     | '/quote-continue'
     | '/reset-password'
@@ -402,6 +414,7 @@ export interface RootRouteChildren {
   LifeRoute: typeof LifeRoute
   LifeInsuranceSpringfieldIlRoute: typeof LifeInsuranceSpringfieldIlRoute
   LoginRoute: typeof LoginRoute
+  PortalRoute: typeof PortalRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   QuoteContinueRoute: typeof QuoteContinueRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -455,6 +468,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -642,6 +662,7 @@ const rootRouteChildren: RootRouteChildren = {
   LifeRoute: LifeRoute,
   LifeInsuranceSpringfieldIlRoute: LifeInsuranceSpringfieldIlRoute,
   LoginRoute: LoginRoute,
+  PortalRoute: PortalRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   QuoteContinueRoute: QuoteContinueRoute,
   ResetPasswordRoute: ResetPasswordRoute,

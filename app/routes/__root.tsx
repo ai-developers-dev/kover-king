@@ -87,8 +87,10 @@ function RootComponent() {
   const isLogin = useMatch({ from: "/login", shouldThrow: false });
   const isVerify = useMatch({ from: "/verify-email", shouldThrow: false });
   const isReset = useMatch({ from: "/reset-password", shouldThrow: false });
+  const isPortal = useMatch({ from: "/portal", shouldThrow: false });
   const showChrome =
-    !isAdmin && !isPpc && !isQuoteContinue && !isElla && !isLogin && !isVerify && !isReset;
+    !isAdmin && !isPpc && !isQuoteContinue && !isElla && !isLogin && !isVerify &&
+    !isReset && !isPortal;
 
   return (
     <html lang="en">
