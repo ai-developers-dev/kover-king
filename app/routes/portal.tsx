@@ -18,6 +18,7 @@ import {
   IdCard,
   Download,
   AlertCircle,
+  AlertTriangle,
   CheckCircle,
   Car,
   Home as HomeIcon,
@@ -309,6 +310,16 @@ function PortalPage() {
         {/* ── Billing ── */}
         {tab === "billing" && (
           <div className="space-y-3">
+            <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-300 p-4">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-900 leading-relaxed">
+                <strong>Payments are not instant.</strong> Submitting payment
+                details does not complete your payment. It is not valid or
+                applied until a licensed Kover King agent processes it with your
+                insurance carrier. Coverage is not bound, renewed, or reinstated
+                by submitting payment here.
+              </p>
+            </div>
             {data.invoices.length === 0 ? (
               <EmptyState
                 icon={CreditCard}

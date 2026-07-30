@@ -133,7 +133,15 @@ export async function sendInvoiceEmail({
        <p style="font-size:12px;color:#737373;line-height:1.6;">
          You can pay by bank e-check or debit/credit card in your account.
          Prefer to pay by phone? Call (217) 960-8997.
-       </p>`
+       </p>
+       <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:14px;margin-top:16px;">
+         <p style="font-size:12px;color:#78350F;line-height:1.6;margin:0;">
+           <strong>Important:</strong> Submitting your payment details does not
+           complete your payment. It is not valid or applied until a licensed
+           Kover King agent processes it with your insurance carrier. Coverage is
+           not bound, renewed, or reinstated by submitting payment online.
+         </p>
+       </div>`
     )
   );
 }

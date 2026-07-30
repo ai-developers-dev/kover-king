@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { submitPaymentMethod } from "~/lib/vault-actions";
-import { CreditCard, Landmark, Lock, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { CreditCard, Landmark, Lock, Loader2, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 
 // Customer payment-details form. Submits card or e-check (ACH) details, which
 // are encrypted at rest and keyed into the carrier's portal by a licensed
 // agent. Deliberately does NOT charge the card here.
+
+// Shown wherever a customer submits or views payment. We collect details and
+// a licensed agent keys them into the carrier's portal — submitting is NOT the
+// same as paying, and coverage is not bound until the carrier applies it.
+export const PENDING_PAYMENT_WARNING =
+  "Submitting your payment details does not complete your payment. Your payment is not valid or applied until a licensed Kover King agent processes it with your insurance carrier. Coverage is not bound, renewed, or reinstated by this submission.";
 
 const inputClass =
   "w-full px-4 py-3 border border-gray-200 rounded-xl bg-white text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition placeholder-gray-400";
@@ -87,10 +93,19 @@ export function PaymentForm({
         <h3 className="font-heading text-xl font-bold text-text-primary mb-2">
           Payment details received
         </h3>
-        <p className="text-text-secondary text-sm max-w-sm mx-auto">
+        <p className="text-text-secondary text-sm max-w-sm mx-auto mb-4">
           A licensed Kover King agent will process your payment with the carrier
           and confirm once it's applied. You'll get a receipt by email.
         </p>
+        <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-300 p-3.5 text-left max-w-md mx-auto">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-900 leading-relaxed">
+            <strong>Your payment is not complete yet.</strong> It is not valid or
+            applied until an agent processes it with your carrier. Coverage is not
+            bound, renewed, or reinstated by this submission. Call (217) 960-8997
+            with any questions.
+          </p>
+        </div>
       </div>
     );
   }
@@ -270,6 +285,13 @@ export function PaymentForm({
             </div>
           </>
         )}
+
+        <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-300 p-3.5">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-900 leading-relaxed">
+            <strong>Important:</strong> {PENDING_PAYMENT_WARNING}
+          </p>
+        </div>
 
         <button
           onClick={submit}
