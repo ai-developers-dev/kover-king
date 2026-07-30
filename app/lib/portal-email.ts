@@ -96,3 +96,44 @@ export async function sendPasswordResetEmail({
     )
   );
 }
+
+export async function sendInvoiceEmail({
+  to,
+  firstName,
+  invoiceNumber,
+  amountCents,
+  dueDate,
+}: {
+  to: string;
+  firstName: string;
+  invoiceNumber: string;
+  amountCents: number;
+  dueDate: string | null;
+}) {
+  const amount = (amountCents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+  const link = `${APP_URL}/portal`;
+  await send(
+    to,
+    `Your Kover King invoice ${invoiceNumber} — ${amount}`,
+    shell(
+      `Invoice ${invoiceNumber}`,
+      `<p style="font-size:15px;color:#171717;">Hi ${firstName},</p>
+       <p style="font-size:14px;color:#525252;line-height:1.6;">
+         Your invoice is ready.
+       </p>
+       <div style="background:#FFF6EB;border-radius:12px;padding:18px;margin:18px 0;">
+         <div style="font-size:12px;color:#737373;text-transform:uppercase;letter-spacing:.05em;">Amount due</div>
+         <div style="font-size:30px;font-weight:800;color:#B33D08;">${amount}</div>
+         ${dueDate ? `<div style="font-size:13px;color:#525252;margin-top:4px;">Due ${dueDate}</div>` : ""}
+       </div>
+       <p style="margin:24px 0;">${button(link, "View & Pay Online")}</p>
+       <p style="font-size:12px;color:#737373;line-height:1.6;">
+         You can pay by bank e-check or debit/credit card in your account.
+         Prefer to pay by phone? Call (217) 960-8997.
+       </p>`
+    )
+  );
+}

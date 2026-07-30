@@ -35,6 +35,7 @@ import {
   deleteDirectory,
 } from "~/lib/actions";
 import { AdminPayments } from "~/components/admin-payments";
+import { AdminBilling } from "~/components/admin-billing";
 import { NAP, SITE_URL } from "~/lib/seo";
 import { slugify } from "~/content/blog";
 import {
@@ -214,7 +215,7 @@ export const Route = createFileRoute("/admin_/dashboard")({
   component: DashboardPage,
 });
 
-type Tab = "quotes" | "contacts" | "blog" | "authors" | "ideas" | "outreach" | "directories" | "payments";
+type Tab = "quotes" | "contacts" | "blog" | "authors" | "ideas" | "outreach" | "directories" | "payments" | "billing";
 
 const insuranceIcon: Record<string, typeof Car> = {
   Auto: Car,
@@ -972,6 +973,16 @@ function DashboardPage() {
             Quotes ({quotes.length})
           </button>
           <button
+            onClick={() => setTab("billing")}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
+              tab === "billing"
+                ? "bg-primary-500 text-white"
+                : "bg-white text-text-secondary border border-gray-100 hover:border-primary-500"
+            }`}
+          >
+            Billing
+          </button>
+          <button
             onClick={() => setTab("payments")}
             className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
               tab === "payments"
@@ -1127,6 +1138,8 @@ function DashboardPage() {
             onUpdate={handleUpdateDirectory}
             onDelete={handleDeleteDirectory}
           />
+        ) : tab === "billing" ? (
+          <AdminBilling token={getToken()} />
         ) : tab === "payments" ? (
           <AdminPayments token={getToken()} />
         ) : tab === "quotes" ? (
