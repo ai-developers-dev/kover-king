@@ -72,6 +72,10 @@ export const submitQuote = createServerFn({ method: "POST" })
       state?: string;
       zip?: string;
       details?: string;
+      /** When set, the lead is also pushed to GoHighLevel with these tags. */
+      ghl_tags?: string[];
+      /** Optional YYYY-MM-DD, forwarded to GHL's dateOfBirth field. */
+      date_of_birth?: string;
     }) => data
   )
   .handler(async ({ data }) => {
@@ -111,6 +115,28 @@ export const submitQuote = createServerFn({ method: "POST" })
       });
     } catch {
       /* notification is best-effort */
+    }
+    // Push to GoHighLevel when the caller supplies tags (e.g. giveaway pages).
+    // Best-effort: a GHL hiccup must never lose the lead (already in our DB).
+    if (data.ghl_tags && data.ghl_tags.length > 0) {
+      try {
+        const { upsertGhlContact } = await import("./ghl");
+        await upsertGhlContact({
+          firstName: data.first_name,
+          lastName: data.last_name,
+          email: data.email,
+          phone: data.phone,
+          address1: data.address,
+          city: data.city,
+          state: data.state,
+          postalCode: data.zip,
+          dateOfBirth: data.date_of_birth,
+          tags: data.ghl_tags,
+          source: data.details?.split("\n")[0]?.replace(/^Source:\s*/, "") || undefined,
+        });
+      } catch {
+        /* GHL push is best-effort */
+      }
     }
     return { success: true };
   });

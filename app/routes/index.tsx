@@ -368,7 +368,6 @@ function HomePage() {
                 {[
                   { src: "/logos/Progressive-logo-removebg-preview.webp", alt: "Progressive" },
                   { src: "/logos/Travelers-logo-removebg-preview.webp", alt: "Travelers" },
-                  { src: "/logos/erie-logo-removebg-preview.webp", alt: "Erie Insurance" },
                   { src: "/logos/safeco-logo-removebg-preview.webp", alt: "Safeco" },
                   { src: "/logos/auto-owners-logo-removebg-preview.webp", alt: "Auto-Owners" },
                   { src: "/logos/NationalGeneralLogo-removebg-preview.webp", alt: "National General" },
@@ -451,10 +450,9 @@ function HomePage() {
                   </p>
                   <Link
                     to={service.href as "/"}
-                    aria-label={`Learn more about ${service.title}`}
                     className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-500 transition-colors hover:text-primary-600"
                   >
-                    Learn More
+                    View {service.title}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </div>

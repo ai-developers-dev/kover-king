@@ -140,8 +140,52 @@ const sections = [
     ],
   },
   {
+    // A2P 10DLC / CTIA-required SMS disclosures. Twilio and the carriers check
+    // this page during campaign vetting — keep every element below intact.
+    id: "sms-terms",
+    title: "8. SMS / Text Messaging Terms",
+    content: [
+      {
+        subtitle: "Program Description",
+        text: "Kover King Insurance Agency (\"Kover King\") offers a customer service SMS messaging program. When you opt in, we may send you text messages to respond to your quote request, deliver insurance quotes and policy information, confirm appointments, send renewal and payment reminders, and reply to questions you send us. This is a customer care program — we do not send promotional or marketing text messages through it.",
+      },
+      {
+        subtitle: "How to Opt In",
+        text: "You may opt in by checking the SMS consent box on a form at koverking.com, by providing your mobile number and consent to one of our licensed agents, or by texting us first at (217) 960-8997. Consent is not a condition of purchasing any goods or services. Consent applies only to the Kover King messaging program, and is not transferable or assignable.",
+      },
+      {
+        subtitle: "Message Frequency",
+        text: "Message frequency varies. You may receive up to approximately 10 messages per month depending on your interaction with us and the services you request.",
+      },
+      {
+        subtitle: "Message and Data Rates",
+        text: "Message and data rates may apply. These charges come from your mobile carrier and are your responsibility. Please contact your wireless provider for details about your plan.",
+      },
+      {
+        subtitle: "How to Opt Out (STOP)",
+        text: "You can cancel the SMS service at any time by replying STOP to any message you receive from us. After you send STOP, we will send you a single message confirming that you have been unsubscribed, and you will no longer receive text messages from us. If you want to rejoin the program, simply opt in again as described above.",
+      },
+      {
+        subtitle: "How to Get Help (HELP)",
+        text: "If you are experiencing any issues with the messaging program, reply HELP to any message for assistance, email us at info@koverking.com, or call us at (217) 960-8997. You can also review these Terms and our Privacy Policy at koverking.com/terms-of-service and koverking.com/privacy-policy.",
+      },
+      {
+        subtitle: "Carrier Liability",
+        text: "Carriers are not liable for delayed or undelivered messages. Delivery of messages is subject to effective transmission by your wireless service provider and is outside of our control.",
+      },
+      {
+        subtitle: "Supported Carriers and Devices",
+        text: "The messaging program is available on most major U.S. wireless carriers. Message delivery requires a compatible mobile device and an active wireless plan that supports SMS.",
+      },
+      {
+        subtitle: "Privacy of Mobile Information",
+        text: "No mobile information will be shared with third parties or affiliates for marketing or promotional purposes. Mobile information of the end user opting in to our messaging program will never be shared or sold to third parties or lead generators. See our Privacy Policy for full details on how we handle your information.",
+      },
+    ],
+  },
+  {
     id: "governing-law",
-    title: "8. Governing Law and Dispute Resolution",
+    title: "9. Governing Law and Dispute Resolution",
     content: [
       {
         subtitle: "Governing Law",
@@ -155,7 +199,7 @@ const sections = [
   },
   {
     id: "general",
-    title: "9. General Provisions",
+    title: "10. General Provisions",
     content: [
       {
         subtitle: "Severability",
@@ -173,7 +217,7 @@ const sections = [
   },
   {
     id: "contact",
-    title: "10. Contact Us",
+    title: "11. Contact Us",
     content: [
       {
         subtitle: "Questions About These Terms",

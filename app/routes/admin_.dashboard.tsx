@@ -1129,6 +1129,9 @@ function DashboardPage() {
                 const isExpanded = expandedId === id;
                 const Icon =
                   insuranceIcon[String(q.insurance_type)] || FileText;
+                // Giveaway/campaign leads carry a "Source: ..." first line in
+                // details (e.g. the Ella Langley page) — badge them in the list.
+                const isGiveaway = /giveaway/i.test(String(q.details || ""));
                 return (
                   <div
                     key={String(q.id)}
@@ -1145,6 +1148,11 @@ function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-text-primary text-sm">
                             {String(q.first_name)} {String(q.last_name)}
+                            {isGiveaway && (
+                              <span className="ml-2 inline-flex items-center align-middle text-[10px] font-bold uppercase tracking-wide bg-primary-50 text-primary-500 px-2 py-0.5 rounded-full">
+                                🎟 Giveaway
+                              </span>
+                            )}
                           </p>
                           <p className="text-xs text-text-muted truncate">
                             {String(q.insurance_type)} Insurance &middot;{" "}

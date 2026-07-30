@@ -13,6 +13,7 @@ const companyLinks = [
   { label: "About Us", to: "/about" },
   { label: "Blog", to: "/blog" },
   { label: "Contact", to: "/contact" },
+  { label: "Text Alerts", to: "/sms-alerts" },
   { label: "Privacy Policy", to: "/privacy-policy" },
   { label: "Terms of Service", to: "/terms-of-service" },
 ] as const;
@@ -66,7 +67,7 @@ export function Footer() {
                 <Crown className="w-5 h-5 text-cream" />
               </div>
               <span className="font-heading text-lg font-bold text-white">
-                Kover <span className="text-primary-500">King</span>
+                Kover <span className="text-primary-400">King</span>
               </span>
             </Link>
             <p className="text-sm leading-relaxed mb-6 text-gray-400">

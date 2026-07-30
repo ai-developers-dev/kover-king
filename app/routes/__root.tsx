@@ -37,7 +37,7 @@ export const Route = createRootRoute({
       { name: "geo.position", content: "39.7817;-89.6501" },
       { name: "ICBM", content: "39.7817, -89.6501" },
       { name: "format-detection", content: "telephone=no" },
-      { name: "theme-color", content: "#E9560C" },
+      { name: "theme-color", content: "#B33D08" },
       // Open Graph
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "en_US" },
@@ -54,18 +54,15 @@ export const Route = createRootRoute({
       { rel: "apple-touch-icon", href: "/favicon.svg" },
       // NOTE: canonical is intentionally NOT set here. Each route sets its own
       // self-referencing canonical so pages don't all inherit the homepage URL.
+      // Fonts are self-hosted (see @font-face in app.css) — no render-blocking
+      // request to fonts.googleapis.com. Preload only the heading font, which
+      // is the LCP element (the hero H1), so it swaps in fast.
       {
-        rel: "preconnect",
-        href: "https://fonts.googleapis.com",
-      },
-      {
-        rel: "preconnect",
-        href: "https://fonts.gstatic.com",
+        rel: "preload",
+        href: "/fonts/outfit-latin.woff2",
+        as: "font",
+        type: "font/woff2",
         crossOrigin: "anonymous",
-      },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Roboto:wght@400;500;700&display=swap",
       },
     ],
     // GA4 — loads only when VITE_GA_ID is set; otherwise no scripts emitted.
@@ -85,7 +82,8 @@ function RootComponent() {
   const isAdmin = useMatch({ from: "/admin_/dashboard", shouldThrow: false });
   const isPpc = useMatch({ from: "/home-ppc-form", shouldThrow: false });
   const isQuoteContinue = useMatch({ from: "/quote-continue", shouldThrow: false });
-  const showChrome = !isAdmin && !isPpc && !isQuoteContinue;
+  const isElla = useMatch({ from: "/ella-langley", shouldThrow: false });
+  const showChrome = !isAdmin && !isPpc && !isQuoteContinue && !isElla;
 
   return (
     <html lang="en">

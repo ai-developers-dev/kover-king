@@ -81,11 +81,39 @@ const sections = [
         subtitle: "No Sale of Personal Information",
         text: "We do not sell, rent, or trade your personal information to third parties for their marketing purposes.",
       },
+      {
+        // Carrier-mandated A2P 10DLC language. Do not weaken or remove — its
+        // absence is a leading cause of 10DLC campaign rejection.
+        subtitle: "SMS / Mobile Information — No Sharing",
+        text: "No mobile information will be shared with third parties or affiliates for marketing or promotional purposes. Mobile information of the end user opting in to our messaging program will never be shared or sold to third parties or lead generators. All other categories of information described in this Policy exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties. Information may be shared with subcontractors in support services, such as customer service, solely to support our own communications with you.",
+      },
+    ],
+  },
+  {
+    id: "sms-messaging",
+    title: "4. SMS and Text Message Communications",
+    content: [
+      {
+        subtitle: "Program Description and Consent",
+        text: "Kover King Insurance Agency operates a customer service SMS program. We use it to respond to quote requests, deliver insurance quotes and policy information, confirm appointments, send renewal and payment reminders, and answer questions you send us. We do not send promotional or marketing text messages through this program. We send text messages only to individuals who have provided express written consent, such as by checking an unchecked consent box on one of our web forms or by texting us first. Consent to receive text messages is not a condition of purchasing any goods or services.",
+      },
+      {
+        subtitle: "Message Frequency and Rates",
+        text: "Message frequency varies based on your interaction with us. Message and data rates may apply. Your mobile carrier is not liable for delayed or undelivered messages.",
+      },
+      {
+        subtitle: "Opting Out and Getting Help",
+        text: "You may cancel SMS messages at any time by replying STOP to any message you receive from us. After you send STOP, we will send a single confirmation message and will not send further text messages unless you opt in again. For assistance, reply HELP to any message, email info@koverking.com, or call (217) 960-8997.",
+      },
+      {
+        subtitle: "Use of Mobile Data",
+        text: "Phone numbers and SMS consent collected through our forms are used solely by Kover King Insurance Agency to communicate with you. We do not share, sell, rent, or transfer this information to third parties, affiliates, or lead generators for their marketing or promotional purposes.",
+      },
     ],
   },
   {
     id: "data-security",
-    title: "4. Data Security",
+    title: "5. Data Security",
     content: [
       {
         subtitle: "Security Measures",
@@ -99,7 +127,7 @@ const sections = [
   },
   {
     id: "cookies",
-    title: "5. Cookies and Tracking Technologies",
+    title: "6. Cookies and Tracking Technologies",
     content: [
       {
         subtitle: "What We Use",
@@ -117,7 +145,7 @@ const sections = [
   },
   {
     id: "third-party-links",
-    title: "6. Third-Party Links",
+    title: "7. Third-Party Links",
     content: [
       {
         subtitle: "External Websites",
@@ -127,7 +155,7 @@ const sections = [
   },
   {
     id: "childrens-privacy",
-    title: "7. Children's Privacy",
+    title: "8. Children's Privacy",
     content: [
       {
         subtitle: "Age Restriction",
@@ -137,7 +165,7 @@ const sections = [
   },
   {
     id: "your-rights",
-    title: "8. Your Rights and Choices",
+    title: "9. Your Rights and Choices",
     content: [
       {
         subtitle: "Access and Correction",
@@ -155,7 +183,7 @@ const sections = [
   },
   {
     id: "changes",
-    title: "9. Changes to This Privacy Policy",
+    title: "10. Changes to This Privacy Policy",
     content: [
       {
         subtitle: "Updates",
@@ -165,7 +193,7 @@ const sections = [
   },
   {
     id: "contact",
-    title: "10. Contact Us",
+    title: "11. Contact Us",
     content: [
       {
         subtitle: "Questions or Concerns",

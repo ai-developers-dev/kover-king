@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as SmsAlertsRouteImport } from './routes/sms-alerts'
 import { Route as QuoteContinueRouteImport } from './routes/quote-continue'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as LifeInsuranceSpringfieldIlRouteImport } from './routes/life-insurance-springfield-il'
@@ -19,6 +20,7 @@ import { Route as LandlordInsuranceRouteImport } from './routes/landlord-insuran
 import { Route as HomePpcFormRouteImport } from './routes/home-ppc-form'
 import { Route as HomeInsuranceSpringfieldIlRouteImport } from './routes/home-insurance-springfield-il'
 import { Route as HomeInsuranceRouteImport } from './routes/home-insurance'
+import { Route as EllaLangleyRouteImport } from './routes/ella-langley'
 import { Route as DuplexInsuranceSpringfieldRouteImport } from './routes/duplex-insurance-springfield'
 import { Route as DuplexInsuranceRouteImport } from './routes/duplex-insurance'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -37,6 +39,11 @@ import { Route as AdminDashboardRouteImport } from './routes/admin_.dashboard'
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
   id: '/terms-of-service',
   path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SmsAlertsRoute = SmsAlertsRouteImport.update({
+  id: '/sms-alerts',
+  path: '/sms-alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuoteContinueRoute = QuoteContinueRouteImport.update({
@@ -85,6 +92,11 @@ const HomeInsuranceSpringfieldIlRoute =
 const HomeInsuranceRoute = HomeInsuranceRouteImport.update({
   id: '/home-insurance',
   path: '/home-insurance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EllaLangleyRoute = EllaLangleyRouteImport.update({
+  id: '/ella-langley',
+  path: '/ella-langley',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DuplexInsuranceSpringfieldRoute =
@@ -173,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/duplex-insurance': typeof DuplexInsuranceRoute
   '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
+  '/ella-langley': typeof EllaLangleyRoute
   '/home-insurance': typeof HomeInsuranceRoute
   '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
   '/home-ppc-form': typeof HomePpcFormRoute
@@ -182,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
+  '/sms-alerts': typeof SmsAlertsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -199,6 +213,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/duplex-insurance': typeof DuplexInsuranceRoute
   '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
+  '/ella-langley': typeof EllaLangleyRoute
   '/home-insurance': typeof HomeInsuranceRoute
   '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
   '/home-ppc-form': typeof HomePpcFormRoute
@@ -208,6 +223,7 @@ export interface FileRoutesByTo {
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
+  '/sms-alerts': typeof SmsAlertsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -226,6 +242,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/duplex-insurance': typeof DuplexInsuranceRoute
   '/duplex-insurance-springfield': typeof DuplexInsuranceSpringfieldRoute
+  '/ella-langley': typeof EllaLangleyRoute
   '/home-insurance': typeof HomeInsuranceRoute
   '/home-insurance-springfield-il': typeof HomeInsuranceSpringfieldIlRoute
   '/home-ppc-form': typeof HomePpcFormRoute
@@ -235,6 +252,7 @@ export interface FileRoutesById {
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
+  '/sms-alerts': typeof SmsAlertsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/admin_/dashboard': typeof AdminDashboardRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -254,6 +272,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/duplex-insurance'
     | '/duplex-insurance-springfield'
+    | '/ella-langley'
     | '/home-insurance'
     | '/home-insurance-springfield-il'
     | '/home-ppc-form'
@@ -263,6 +282,7 @@ export interface FileRouteTypes {
     | '/life-insurance-springfield-il'
     | '/privacy-policy'
     | '/quote-continue'
+    | '/sms-alerts'
     | '/terms-of-service'
     | '/admin/dashboard'
     | '/blog/$slug'
@@ -280,6 +300,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/duplex-insurance'
     | '/duplex-insurance-springfield'
+    | '/ella-langley'
     | '/home-insurance'
     | '/home-insurance-springfield-il'
     | '/home-ppc-form'
@@ -289,6 +310,7 @@ export interface FileRouteTypes {
     | '/life-insurance-springfield-il'
     | '/privacy-policy'
     | '/quote-continue'
+    | '/sms-alerts'
     | '/terms-of-service'
     | '/admin/dashboard'
     | '/blog/$slug'
@@ -306,6 +328,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/duplex-insurance'
     | '/duplex-insurance-springfield'
+    | '/ella-langley'
     | '/home-insurance'
     | '/home-insurance-springfield-il'
     | '/home-ppc-form'
@@ -315,6 +338,7 @@ export interface FileRouteTypes {
     | '/life-insurance-springfield-il'
     | '/privacy-policy'
     | '/quote-continue'
+    | '/sms-alerts'
     | '/terms-of-service'
     | '/admin_/dashboard'
     | '/blog/$slug'
@@ -333,6 +357,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DuplexInsuranceRoute: typeof DuplexInsuranceRoute
   DuplexInsuranceSpringfieldRoute: typeof DuplexInsuranceSpringfieldRoute
+  EllaLangleyRoute: typeof EllaLangleyRoute
   HomeInsuranceRoute: typeof HomeInsuranceRoute
   HomeInsuranceSpringfieldIlRoute: typeof HomeInsuranceSpringfieldIlRoute
   HomePpcFormRoute: typeof HomePpcFormRoute
@@ -342,6 +367,7 @@ export interface RootRouteChildren {
   LifeInsuranceSpringfieldIlRoute: typeof LifeInsuranceSpringfieldIlRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   QuoteContinueRoute: typeof QuoteContinueRoute
+  SmsAlertsRoute: typeof SmsAlertsRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   BlogSlugRoute: typeof BlogSlugRoute
@@ -355,6 +381,13 @@ declare module '@tanstack/react-router' {
       path: '/terms-of-service'
       fullPath: '/terms-of-service'
       preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sms-alerts': {
+      id: '/sms-alerts'
+      path: '/sms-alerts'
+      fullPath: '/sms-alerts'
+      preLoaderRoute: typeof SmsAlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quote-continue': {
@@ -418,6 +451,13 @@ declare module '@tanstack/react-router' {
       path: '/home-insurance'
       fullPath: '/home-insurance'
       preLoaderRoute: typeof HomeInsuranceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ella-langley': {
+      id: '/ella-langley'
+      path: '/ella-langley'
+      fullPath: '/ella-langley'
+      preLoaderRoute: typeof EllaLangleyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/duplex-insurance-springfield': {
@@ -533,6 +573,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DuplexInsuranceRoute: DuplexInsuranceRoute,
   DuplexInsuranceSpringfieldRoute: DuplexInsuranceSpringfieldRoute,
+  EllaLangleyRoute: EllaLangleyRoute,
   HomeInsuranceRoute: HomeInsuranceRoute,
   HomeInsuranceSpringfieldIlRoute: HomeInsuranceSpringfieldIlRoute,
   HomePpcFormRoute: HomePpcFormRoute,
@@ -542,6 +583,7 @@ const rootRouteChildren: RootRouteChildren = {
   LifeInsuranceSpringfieldIlRoute: LifeInsuranceSpringfieldIlRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   QuoteContinueRoute: QuoteContinueRoute,
+  SmsAlertsRoute: SmsAlertsRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   BlogSlugRoute: BlogSlugRoute,
