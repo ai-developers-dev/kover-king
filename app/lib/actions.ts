@@ -1235,6 +1235,7 @@ export const submitQuoteFromLead = createServerFn({ method: "POST" })
       year_built?: string;
       home_type?: string;
       current_carrier?: string;
+      sms_consent_lines?: string[];
     }) => data
   )
   .handler(async ({ data }) => {
@@ -1245,6 +1246,7 @@ export const submitQuoteFromLead = createServerFn({ method: "POST" })
       data.home_type && `Home Type: ${data.home_type}`,
       data.current_carrier && `Current Carrier: ${data.current_carrier}`,
       "Source: Meta Lead Ad",
+      ...(data.sms_consent_lines || []),
     ]
       .filter(Boolean)
       .join("\n");

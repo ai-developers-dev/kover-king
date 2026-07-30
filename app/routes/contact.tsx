@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { submitContact, submitQuote } from "~/lib/actions";
 import {
+  SmsConsentCheckbox,
+  smsConsentDetailLines,
+} from "~/components/sms-consent-checkbox";
+import {
   Phone,
   Mail,
   MapPin,
@@ -61,6 +65,7 @@ const inputClass =
 
 function ContactForm() {
   const [status, setStatus] = useState<FormStatus>("idle");
+  const [smsConsent, setSmsConsent] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -81,7 +86,7 @@ function ContactForm() {
           name: form.name,
           email: form.email,
           phone: form.phone || undefined,
-          message: form.message,
+          message: [form.message, ...smsConsentDetailLines(smsConsent)].join("\n"),
         },
       });
       setStatus("success");
@@ -168,6 +173,7 @@ function ContactForm() {
         />
       </InputField>
 
+      <SmsConsentCheckbox checked={smsConsent} onChange={setSmsConsent} compact />
       <button
         type="submit"
         disabled={status === "loading"}
@@ -201,6 +207,7 @@ const INSURANCE_TYPES = [
 
 function QuoteForm() {
   const [status, setStatus] = useState<FormStatus>("idle");
+  const [smsConsent, setSmsConsent] = useState(false);
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -235,7 +242,10 @@ function QuoteForm() {
           city: form.city || undefined,
           state: form.state || "IL",
           zip: form.zip || undefined,
-          details: form.details || undefined,
+          details: [form.details, ...smsConsentDetailLines(smsConsent)]
+            .filter(Boolean)
+            .join("\n"),
+          ghl_tags: smsConsent ? ["sms-opt-in"] : undefined,
         },
       });
       setStatus("success");
@@ -419,6 +429,7 @@ function QuoteForm() {
         />
       </InputField>
 
+      <SmsConsentCheckbox checked={smsConsent} onChange={setSmsConsent} compact />
       <button
         type="submit"
         disabled={status === "loading"}

@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { submitQuote } from "~/lib/actions";
 import {
+  SmsConsentCheckbox,
+  smsConsentDetailLines,
+} from "~/components/sms-consent-checkbox";
+import {
   Phone,
   Crown,
   Star,
@@ -64,6 +68,7 @@ function HomePpcForm() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [smsConsent, setSmsConsent] = useState(false);
   const [estimatedRate, setEstimatedRate] = useState(0);
 
   const stepsAway = Math.max(0, 4 - step);
@@ -101,7 +106,14 @@ function HomePpcForm() {
           phone,
           insurance_type: "Home",
           zip: zip || undefined,
-          details: `Home Value: ${selected?.label || homeValue}\nYear Built: ${yearBuilt}\nHome Type: ${homeType}\nSource: PPC Landing Page`,
+          details: [
+            `Home Value: ${selected?.label || homeValue}`,
+            `Year Built: ${yearBuilt}`,
+            `Home Type: ${homeType}`,
+            "Source: PPC Landing Page",
+            ...smsConsentDetailLines(smsConsent),
+          ].join("\n"),
+          ghl_tags: smsConsent ? ["sms-opt-in"] : undefined,
         },
       });
     } catch {
@@ -423,6 +435,11 @@ function HomePpcForm() {
                         className={inputClass}
                       />
                     </div>
+                    <SmsConsentCheckbox
+                      checked={smsConsent}
+                      onChange={setSmsConsent}
+                      compact
+                    />
                     <button
                       onClick={handleContactSubmit}
                       disabled={!firstName || !lastName || !email || !phone || submitting}

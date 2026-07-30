@@ -9,6 +9,10 @@ import {
 } from "~/components/ui/dialog";
 import { submitQuote } from "~/lib/actions";
 import {
+  SmsConsentCheckbox,
+  smsConsentDetailLines,
+} from "~/components/sms-consent-checkbox";
+import {
   Car,
   Home,
   Briefcase,
@@ -632,6 +636,7 @@ export function QuoteDialog({
     (defaultInsuranceType as InsuranceType) || null
   );
   const [status, setStatus] = useState<FormStatus>("idle");
+  const [smsConsent, setSmsConsent] = useState(false);
   const [form, setForm] = useState<Record<string, string>>(
     defaultInsuranceType
       ? { ...(formDefaults[defaultInsuranceType as InsuranceType] || baseDefaults) }
@@ -662,7 +667,9 @@ export function QuoteDialog({
     if (!selectedType) return;
     setStatus("loading");
     try {
-      const details = buildDetails(selectedType, form);
+      const details = [buildDetails(selectedType, form), ...smsConsentDetailLines(smsConsent)]
+        .filter(Boolean)
+        .join("\n");
       await submitQuote({
         data: {
           first_name: form.first_name,
@@ -675,6 +682,7 @@ export function QuoteDialog({
           state: form.state || "IL",
           zip: form.zip || undefined,
           details: details || undefined,
+          ghl_tags: smsConsent ? ["sms-opt-in"] : undefined,
         },
       });
       setStatus("success");
@@ -840,6 +848,12 @@ export function QuoteDialog({
                       className={`${inputClass} resize-none`}
                     />
                   </div>
+
+                  <SmsConsentCheckbox
+                    checked={smsConsent}
+                    onChange={setSmsConsent}
+                    compact
+                  />
 
                   <button
                     type="submit"

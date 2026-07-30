@@ -2,6 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { submitQuoteFromLead } from "~/lib/actions";
 import {
+  SmsConsentCheckbox,
+  smsConsentDetailLines,
+} from "~/components/sms-consent-checkbox";
+import {
   Crown,
   Phone,
   ArrowRight,
@@ -80,6 +84,7 @@ function QuoteContinuePage() {
 
   const [step, setStep] = useState(1); // 1 = form, 2 = success
   const [submitting, setSubmitting] = useState(false);
+  const [smsConsent, setSmsConsent] = useState(false);
   const [estimatedRate, setEstimatedRate] = useState(0);
 
   useEffect(() => {
@@ -140,6 +145,7 @@ function QuoteContinuePage() {
           year_built: yearBuilt,
           home_type: homeType,
           current_carrier: currentCarrier || undefined,
+          sms_consent_lines: smsConsentDetailLines(smsConsent),
         },
       });
     } catch {
@@ -406,6 +412,11 @@ function QuoteContinuePage() {
                       </select>
                     </div>
 
+                    <SmsConsentCheckbox
+                      checked={smsConsent}
+                      onChange={setSmsConsent}
+                      compact
+                    />
                     <button
                       onClick={handleSubmit}
                       disabled={

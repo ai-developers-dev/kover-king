@@ -8,6 +8,10 @@ import {
   DialogTrigger,
 } from "~/components/ui/dialog";
 import { submitContact } from "~/lib/actions";
+import {
+  SmsConsentCheckbox,
+  smsConsentDetailLines,
+} from "~/components/sms-consent-checkbox";
 import { Send, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 type FormStatus = "idle" | "loading" | "success" | "error";
@@ -18,6 +22,7 @@ const inputClass =
 export function ContactDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<FormStatus>("idle");
+  const [smsConsent, setSmsConsent] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -39,7 +44,7 @@ export function ContactDialog({ children }: { children: React.ReactNode }) {
           name: form.name,
           email: form.email,
           phone: form.phone || undefined,
-          message: form.message,
+          message: [form.message, ...smsConsentDetailLines(smsConsent)].join("\n"),
         },
       });
       setStatus("success");
@@ -174,6 +179,7 @@ export function ContactDialog({ children }: { children: React.ReactNode }) {
                 />
               </div>
 
+              <SmsConsentCheckbox checked={smsConsent} onChange={setSmsConsent} compact />
               <button
                 type="submit"
                 disabled={status === "loading"}
