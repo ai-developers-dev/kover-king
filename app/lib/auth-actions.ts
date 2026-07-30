@@ -238,6 +238,14 @@ export const loginUser = createServerFn({ method: "POST" })
 
     clearRateLimit(key);
     const token = await createSession(Number(user.id));
+    // Staff also get an admin_sessions row so the existing admin server
+    // functions (which check that table) accept this token.
+    if (String(user.role) !== "customer") {
+      await db.execute({
+        sql: "INSERT INTO admin_sessions (token, expires_at) VALUES (?, ?)",
+        args: [token, expiryFromNow(SESSION_DAYS * DAY_MS)],
+      });
+    }
     await db.execute({
       sql: "UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?",
       args: [user.id],

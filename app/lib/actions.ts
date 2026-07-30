@@ -17,13 +17,25 @@ async function assertSession(token: unknown): Promise<void> {
   if (!token || typeof token !== "string") {
     throw new Error("Unauthorized");
   }
-  const result = await db.execute({
+  const now = new Date().toISOString();
+  // Legacy path: tokens minted by loginAdmin.
+  const legacy = await db.execute({
     sql: "SELECT id FROM admin_sessions WHERE token = ? AND expires_at > ?",
-    args: [token, new Date().toISOString()],
+    args: [token, now],
   });
-  if (result.rows.length === 0) {
-    throw new Error("Unauthorized");
-  }
+  if (legacy.rows.length > 0) return;
+
+  // Unified path: tokens minted by loginUser. Staff roles only — a customer
+  // session must never satisfy an admin-protected function.
+  const unified = await db.execute({
+    sql: `SELECT u.id FROM sessions s
+          JOIN users u ON u.id = s.user_id
+          WHERE s.token = ? AND s.expires_at > ? AND u.role IN ('admin','agent')`,
+    args: [token, now],
+  });
+  if (unified.rows.length > 0) return;
+
+  throw new Error("Unauthorized");
 }
 
 export const submitContact = createServerFn({ method: "POST" })
