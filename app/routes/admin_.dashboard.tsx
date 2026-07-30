@@ -36,6 +36,13 @@ import {
 } from "~/lib/actions";
 import { AdminPayments } from "~/components/admin-payments";
 import { AdminBilling } from "~/components/admin-billing";
+import { AdminShell } from "~/components/admin/admin-shell";
+import { navItem } from "~/components/admin/admin-nav";
+import {
+  AdminPageHeader,
+  StatGrid,
+  StatCard,
+} from "~/components/admin/admin-page";
 import { NAP, SITE_URL } from "~/lib/seo";
 import { slugify } from "~/content/blog";
 import {
@@ -67,6 +74,7 @@ import {
   Link2,
   Mail,
   Search,
+  Newspaper,
 } from "lucide-react";
 
 function getToken(): string {
@@ -880,185 +888,52 @@ function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Top Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="font-heading font-bold text-lg text-text-primary">
-                KoverKing Admin
-              </h1>
-              <p className="text-xs text-text-muted">Dashboard</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={loadData}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:text-white bg-red-50 hover:bg-red-500 rounded-xl transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
+    <AdminShell
+      tab={tab as any}
+      onTabChange={(t) => setTab(t as Tab)}
+      onRefresh={loadData}
+      onLogout={handleLogout}
+      refreshing={loading}
+    >
+      <AdminPageHeader
+        title={navItem(tab as any)?.label ?? "Admin"}
+        description={navItem(tab as any)?.description}
+      />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="contents">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-sm text-text-muted mb-1">Total Quotes</p>
-            <p className="text-2xl font-heading font-bold text-text-primary">
-              {quotes.length}
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-sm text-text-muted mb-1">Total Contacts</p>
-            <p className="text-2xl font-heading font-bold text-text-primary">
-              {contacts.length}
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-sm text-text-muted mb-1">Most Requested</p>
-            <p className="text-2xl font-heading font-bold text-text-primary">
-              {quotes.length > 0
-                ? Object.entries(
-                    quotes.reduce(
-                      (acc, q) => {
-                        const t = String(q.insurance_type || "Other");
-                        acc[t] = (acc[t] || 0) + 1;
-                        return acc;
-                      },
-                      {} as Record<string, number>
-                    )
-                  ).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] || "—"
-                : "—"}
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-sm text-text-muted mb-1">Latest Quote</p>
-            <p className="text-sm font-medium text-text-primary">
-              {quotes.length > 0
-                ? formatDate(quotes[0]?.created_at)
-                : "No quotes yet"}
-            </p>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          <button
+        <StatGrid>
+          <StatCard
+            label="Quote Requests"
+            value={String(quotes.length)}
+            hint={quotes.length ? "Waiting on follow-up" : "All clear"}
+            icon={FileText}
+            urgent={quotes.length > 0}
             onClick={() => setTab("quotes")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              tab === "quotes"
-                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            Quotes ({quotes.length})
-          </button>
-          <button
-            onClick={() => setTab("billing")}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
-              tab === "billing"
-                ? "bg-primary-500 text-white"
-                : "bg-white text-text-secondary border border-gray-100 hover:border-primary-500"
-            }`}
-          >
-            Billing
-          </button>
-          <button
-            onClick={() => setTab("payments")}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
-              tab === "payments"
-                ? "bg-primary-500 text-white"
-                : "bg-white text-text-secondary border border-gray-100 hover:border-primary-500"
-            }`}
-          >
-            Payments
-          </button>
-          <button
+          />
+          <StatCard
+            label="Contacts"
+            value={String(contacts.length)}
+            hint="Messages from the site"
+            icon={Mail}
             onClick={() => setTab("contacts")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              tab === "contacts"
-                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            Contacts ({contacts.length})
-          </button>
-          <button
+          />
+          <StatCard
+            label="Blog Posts"
+            value={String(posts.length)}
+            hint="Drafts and published"
+            icon={Newspaper}
             onClick={() => setTab("blog")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              tab === "blog"
-                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            Blog ({posts.length})
-          </button>
-          <button
-            onClick={() => setTab("authors")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              tab === "authors"
-                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Authors ({authors.length})
-          </button>
-          <button
+          />
+          <StatCard
+            label="Keyword Ideas"
+            value={String(ideas.length)}
+            hint="From the weekly agent"
+            icon={Lightbulb}
             onClick={() => setTab("ideas")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              tab === "ideas"
-                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <Lightbulb className="w-4 h-4" />
-            Keyword Ideas
-          </button>
-          <button
-            onClick={() => setTab("outreach")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              tab === "outreach"
-                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <Link2 className="w-4 h-4" />
-            Outreach ({outreach.length})
-          </button>
-          <button
-            onClick={() => setTab("directories")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              tab === "directories"
-                ? "bg-primary-500 text-white shadow-[0_4px_20px_-4px_rgba(233,86,12,0.4)]"
-                : "bg-white text-text-secondary hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            Link Opportunities ({directories.length})
-          </button>
-        </div>
+          />
+        </StatGrid>
+
 
         {/* Content */}
         {loading ? (
@@ -1412,7 +1287,7 @@ function DashboardPage() {
           </div>
         )}
       </div>
-    </div>
+    </AdminShell>
   );
 }
 
