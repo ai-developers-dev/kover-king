@@ -9,10 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as SmsAlertsRouteImport } from './routes/sms-alerts'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QuoteContinueRouteImport } from './routes/quote-continue'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LifeInsuranceSpringfieldIlRouteImport } from './routes/life-insurance-springfield-il'
 import { Route as LifeRouteImport } from './routes/life'
 import { Route as LandlordInsuranceSpringfieldRouteImport } from './routes/landlord-insurance-springfield'
@@ -36,6 +39,11 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminDashboardRouteImport } from './routes/admin_.dashboard'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
   id: '/terms-of-service',
   path: '/terms-of-service',
@@ -46,6 +54,11 @@ const SmsAlertsRoute = SmsAlertsRouteImport.update({
   path: '/sms-alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuoteContinueRoute = QuoteContinueRouteImport.update({
   id: '/quote-continue',
   path: '/quote-continue',
@@ -54,6 +67,11 @@ const QuoteContinueRoute = QuoteContinueRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LifeInsuranceSpringfieldIlRoute =
@@ -193,10 +211,13 @@ export interface FileRoutesByFullPath {
   '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
+  '/login': typeof LoginRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sms-alerts': typeof SmsAlertsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
@@ -221,10 +242,13 @@ export interface FileRoutesByTo {
   '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
+  '/login': typeof LoginRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sms-alerts': typeof SmsAlertsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
@@ -250,10 +274,13 @@ export interface FileRoutesById {
   '/landlord-insurance-springfield': typeof LandlordInsuranceSpringfieldRoute
   '/life': typeof LifeRoute
   '/life-insurance-springfield-il': typeof LifeInsuranceSpringfieldIlRoute
+  '/login': typeof LoginRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/quote-continue': typeof QuoteContinueRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sms-alerts': typeof SmsAlertsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin_/dashboard': typeof AdminDashboardRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
@@ -280,10 +307,13 @@ export interface FileRouteTypes {
     | '/landlord-insurance-springfield'
     | '/life'
     | '/life-insurance-springfield-il'
+    | '/login'
     | '/privacy-policy'
     | '/quote-continue'
+    | '/reset-password'
     | '/sms-alerts'
     | '/terms-of-service'
+    | '/verify-email'
     | '/admin/dashboard'
     | '/blog/$slug'
     | '/blog/'
@@ -308,10 +338,13 @@ export interface FileRouteTypes {
     | '/landlord-insurance-springfield'
     | '/life'
     | '/life-insurance-springfield-il'
+    | '/login'
     | '/privacy-policy'
     | '/quote-continue'
+    | '/reset-password'
     | '/sms-alerts'
     | '/terms-of-service'
+    | '/verify-email'
     | '/admin/dashboard'
     | '/blog/$slug'
     | '/blog'
@@ -336,10 +369,13 @@ export interface FileRouteTypes {
     | '/landlord-insurance-springfield'
     | '/life'
     | '/life-insurance-springfield-il'
+    | '/login'
     | '/privacy-policy'
     | '/quote-continue'
+    | '/reset-password'
     | '/sms-alerts'
     | '/terms-of-service'
+    | '/verify-email'
     | '/admin_/dashboard'
     | '/blog/$slug'
     | '/blog/'
@@ -365,10 +401,13 @@ export interface RootRouteChildren {
   LandlordInsuranceSpringfieldRoute: typeof LandlordInsuranceSpringfieldRoute
   LifeRoute: typeof LifeRoute
   LifeInsuranceSpringfieldIlRoute: typeof LifeInsuranceSpringfieldIlRoute
+  LoginRoute: typeof LoginRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   QuoteContinueRoute: typeof QuoteContinueRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SmsAlertsRoute: typeof SmsAlertsRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
@@ -376,6 +415,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms-of-service': {
       id: '/terms-of-service'
       path: '/terms-of-service'
@@ -390,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SmsAlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quote-continue': {
       id: '/quote-continue'
       path: '/quote-continue'
@@ -402,6 +455,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/life-insurance-springfield-il': {
@@ -581,10 +641,13 @@ const rootRouteChildren: RootRouteChildren = {
   LandlordInsuranceSpringfieldRoute: LandlordInsuranceSpringfieldRoute,
   LifeRoute: LifeRoute,
   LifeInsuranceSpringfieldIlRoute: LifeInsuranceSpringfieldIlRoute,
+  LoginRoute: LoginRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   QuoteContinueRoute: QuoteContinueRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SmsAlertsRoute: SmsAlertsRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,

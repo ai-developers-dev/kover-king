@@ -185,21 +185,45 @@ export const loginAdmin = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await initDb();
-    // Hardcoded admin credentials — move to DB + bcrypt before production
-    const ADMIN_USER = "admin";
-    const ADMIN_PASS = "KoverKing2026!";
-    if (data.username === ADMIN_USER && data.password === ADMIN_PASS) {
-      const token = globalThis.crypto.randomUUID();
-      const expires = new Date(
-        Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000
-      ).toISOString();
-      await db.execute({
-        sql: "INSERT INTO admin_sessions (token, expires_at) VALUES (?, ?)",
-        args: [token, expires],
-      });
-      return { success: true as const, token };
-    }
-    return { success: false as const, error: "Invalid credentials" };
+    const { verifyPassword, normalizeEmail } = await import("./auth");
+    const { ensureSeedAdmin } = await import("./seed-admin");
+
+    // Creates the admin row from ADMIN_EMAIL/ADMIN_PASSWORD on first run.
+    // No-op once the row exists. Replaces the old hardcoded credentials.
+    await ensureSeedAdmin();
+
+    // `username` is now the admin's email address.
+    const email = normalizeEmail(data.username);
+    const res = await db.execute({
+      sql: "SELECT * FROM users WHERE email = ? AND role IN ('admin','agent') LIMIT 1",
+      args: [email],
+    });
+    const user = res.rows[0];
+    const generic = { success: false as const, error: "Invalid credentials" };
+    if (!user) return generic;
+
+    const ok = await verifyPassword(data.password, String(user.password_hash));
+    if (!ok) return generic;
+
+    const token = globalThis.crypto.randomUUID();
+    const expires = new Date(
+      Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000
+    ).toISOString();
+    // Keep writing to admin_sessions so the 33 existing protected server
+    // functions keep working unchanged; also record a unified session.
+    await db.execute({
+      sql: "INSERT INTO admin_sessions (token, expires_at) VALUES (?, ?)",
+      args: [token, expires],
+    });
+    await db.execute({
+      sql: "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
+      args: [user.id, token, expires],
+    });
+    await db.execute({
+      sql: "UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [user.id],
+    });
+    return { success: true as const, token };
   });
 
 export const logoutAdmin = createServerFn({ method: "POST" })

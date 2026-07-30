@@ -225,11 +225,11 @@ export function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-400">
           <p>&copy; 2026 Kover King Insurance Agency. All rights reserved.</p>
           <Link
-            to="/admin"
+            to="/login"
             className="flex items-center gap-1 hover:text-gray-400 transition-colors"
           >
             <Lock className="w-3 h-3" />
-            Admin Login
+            Log In
           </Link>
         </div>
       </div>

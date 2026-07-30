@@ -56,6 +56,29 @@ export async function initDb() {
     await db.execute(
       "CREATE TABLE IF NOT EXISTS directories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, url TEXT UNIQUE NOT NULL, category TEXT, notes TEXT, status TEXT NOT NULL DEFAULT 'not_started', listing_url TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
     );
+
+    // ─── Customer portal / unified auth ──────────────────────────────────
+    // One users table for every human who can log in. `role` decides where
+    // /login sends them: 'admin' -> dashboard, 'customer' -> portal.
+    // Passwords are scrypt hashes (see app/lib/auth.ts) — never plaintext.
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'customer', first_name TEXT, last_name TEXT, phone TEXT, email_verified_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_login_at DATETIME)"
+    );
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, token TEXT UNIQUE NOT NULL, expires_at DATETIME NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS email_verification_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, token TEXT UNIQUE NOT NULL, expires_at DATETIME NOT NULL, used_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE TABLE IF NOT EXISTS password_reset_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, token TEXT UNIQUE NOT NULL, expires_at DATETIME NOT NULL, used_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    );
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)"
+    );
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"
+    );
     // blog_posts predates author records — add the new columns if missing.
     // ALTER ... ADD COLUMN throws "duplicate column" if already present, so
     // each is wrapped to stay idempotent across restarts/deploys.
@@ -112,6 +135,14 @@ export async function initDb() {
         "2026-05-29",
       ],
     });
+    // Seed the admin user from ADMIN_EMAIL/ADMIN_PASSWORD if it doesn't exist.
+    // Dynamic import avoids a circular dependency (seed-admin imports `db`).
+    try {
+      const { ensureSeedAdmin } = await import("./seed-admin");
+      await ensureSeedAdmin();
+    } catch (err) {
+      console.error("[DB] seed admin failed:", err);
+    }
     initialized = true;
     console.log("[DB] initDb complete");
   } catch (err) {

@@ -83,7 +83,12 @@ function RootComponent() {
   const isPpc = useMatch({ from: "/home-ppc-form", shouldThrow: false });
   const isQuoteContinue = useMatch({ from: "/quote-continue", shouldThrow: false });
   const isElla = useMatch({ from: "/ella-langley", shouldThrow: false });
-  const showChrome = !isAdmin && !isPpc && !isQuoteContinue && !isElla;
+  // Auth pages render their own full-page layout.
+  const isLogin = useMatch({ from: "/login", shouldThrow: false });
+  const isVerify = useMatch({ from: "/verify-email", shouldThrow: false });
+  const isReset = useMatch({ from: "/reset-password", shouldThrow: false });
+  const showChrome =
+    !isAdmin && !isPpc && !isQuoteContinue && !isElla && !isLogin && !isVerify && !isReset;
 
   return (
     <html lang="en">
