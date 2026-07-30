@@ -18,9 +18,11 @@ import {
   UserCheck,
   FileCheck,
   ShieldCheck,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { QuoteDialog } from "~/components/quote-dialog";
+import { SmsOptInForm } from "~/components/sms-optin-form";
 import { canonical, jsonLd, faqPageSchema } from "~/lib/seo";
 
 export const Route = createFileRoute("/")({
@@ -727,6 +729,61 @@ function HomePage() {
               Call us — we likely cover your area.
             </a>
           </p>
+        </div>
+      </section>
+
+      {/* ── SMS Opt-In ──
+          Kept on the homepage so A2P 10DLC / carrier reviewers can find the
+          consent language and disclosures at the top-level domain. */}
+      <section id="text-alerts" className="bg-white py-20 sm:py-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-start gap-10 lg:grid-cols-2">
+            <div>
+              <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
+                <MessageSquare className="h-7 w-7 text-primary-500" />
+              </div>
+              <h2 className="font-heading text-3xl font-extrabold text-text-primary sm:text-4xl">
+                Get Text Updates on Your Quote
+              </h2>
+              <p className="mt-4 text-text-secondary leading-relaxed">
+                Opt in to receive customer service text messages from our
+                licensed Springfield agents — quote follow-ups, policy
+                documents, appointment confirmations, and renewal reminders.
+                We don't send marketing texts through this program.
+              </p>
+              <ul className="mt-6 space-y-2.5 text-sm text-text-secondary">
+                {[
+                  "Message frequency varies; msg & data rates may apply.",
+                  "Reply STOP to cancel at any time, HELP for help.",
+                  "Consent is not a condition of purchase.",
+                  "Your mobile info is never shared or sold to third parties.",
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2.5">
+                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 text-sm text-text-muted">
+                Full details in our{" "}
+                <Link
+                  to="/privacy-policy"
+                  className="text-primary-500 underline hover:text-primary-600"
+                >
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link
+                  to="/terms-of-service"
+                  className="text-primary-500 underline hover:text-primary-600"
+                >
+                  SMS Terms
+                </Link>
+                .
+              </p>
+            </div>
+            <SmsOptInForm source="Homepage SMS Opt-In" />
+          </div>
         </div>
       </section>
 
